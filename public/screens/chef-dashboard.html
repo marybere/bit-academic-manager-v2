@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html class="light" lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C8184A",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13191f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .font-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col max-w-[375px] mx-auto shadow-2xl overflow-x-hidden">
+<!-- Header Section -->
+<header class="flex items-center bg-white dark:bg-slate-900 p-4 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800">
+<div class="flex size-10 shrink-0 items-center mr-3">
+<div class="bg-primary/10 rounded-full size-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+</div>
+<div class="flex-1">
+<p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Class Representative</p>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Jean Dupont</h2>
+</div>
+<button class="flex size-10 items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">logout</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 py-6 overflow-y-auto">
+<!-- Date Display -->
+<div class="mb-6">
+<p class="text-primary font-semibold text-sm uppercase tracking-wider mb-1">TODAY</p>
+<h1 class="text-slate-900 dark:text-slate-100 text-3xl font-bold">24 Mai 2024</h1>
+</div>
+<!-- Primary Action -->
+<div class="mb-8">
+<button class="w-full flex items-center justify-center gap-3 bg-primary text-white py-4 px-6 rounded-lg font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined">fact_check</span>
+<span>Take Today's Attendance</span>
+</button>
+</div>
+<!-- Last Call Summary -->
+<div>
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-lg font-bold">Last Attendance</h3>
+<a class="text-primary text-sm font-medium" href="#">View all</a>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-lg p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="flex items-start justify-between mb-4">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-tighter">CLASS</p>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-base leading-tight">Licence 3 CS</p>
+</div>
+<div class="bg-primary/5 dark:bg-primary/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">groups</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800 pt-4">
+<div>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Date</p>
+<p class="text-slate-800 dark:text-slate-200 font-semibold text-sm">23 Mai 2024</p>
+</div>
+<div class="text-right">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Absent</p>
+<div class="flex items-center justify-end gap-1">
+<span class="size-2 rounded-full bg-red-500"></span>
+<p class="text-red-600 dark:text-red-400 font-bold text-sm">2 absent</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats / Secondary Info -->
+<div class="mt-8 grid grid-cols-2 gap-4">
+<div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+<span class="material-symbols-outlined text-primary mb-2">trending_up</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Attendance Rate</p>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-xl">94%</p>
+</div>
+<div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-lg">
+<span class="material-symbols-outlined text-primary mb-2">schedule</span>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Next Class</p>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-xl">14:00</p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-6 pb-6 pt-3">
+<div class="flex justify-between items-center max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined text-2xl font-fill">fact_check</span>
+<span class="text-[10px] font-bold uppercase tracking-wide">ATTENDANCE</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">history</span>
+<span class="text-[10px] font-bold uppercase tracking-wide">HISTORY</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-2xl">account_circle</span>
+<span class="text-[10px] font-bold uppercase tracking-wide">PROFILE</span>
+</a>
+</div>
+</nav>
+</body></html>

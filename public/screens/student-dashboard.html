@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C8184A",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13191f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>Student Portal - Dashboard</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-full flex-col">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-10 py-3 flex items-center justify-between gap-4">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-3xl font-bold">school</span>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Student Portal</h2>
+</div>
+<div class="hidden lg:flex items-center gap-6">
+<a class="text-primary font-semibold text-sm border-b-2 border-primary pb-1" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium text-sm hover:text-primary transition-colors" href="#">My Documents</a>
+<a class="text-slate-600 dark:text-slate-400 font-medium text-sm hover:text-primary transition-colors" href="#">Profile</a>
+</div>
+</div>
+<div class="flex items-center gap-4 flex-1 justify-end max-w-xl">
+<div class="relative hidden sm:block w-full max-w-xs">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50" placeholder="Search for a request..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<div class="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="Portrait of a young male student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABOEWgw1rHXL-cdsPJS6o_Hmap_ayqp5kzWN9xMfNPLH1IHHO9uLdaIrc1zyLmatYt9HC_7BIu5zEcEGz6hd7a3ndKKwjLSndScNj7DHKgrkK8vQ6WYhqM9uh5s3wt0d3tGvrNFdwCAl1QHikCjrAhkisI7kzmm73cCxSlvP1lmhV2G_kegICbYkTmrgP7bSdIN8jxaKpuNfukCDChp122lsmctQAh97NmT5g5JXKGsAAXNu06tnvYSk_qTJYnOA7rAT7mr7BHXbXn"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-10 pb-24">
+<!-- Welcome Header -->
+<div class="mb-8">
+<div class="bg-gradient-to-r from-primary to-[#b01642] rounded-xl p-8 text-white shadow-lg shadow-primary/20 relative overflow-hidden">
+<div class="relative z-10">
+<h1 class="text-3xl font-black tracking-tight mb-2">Welcome, Marc Ouédraogo</h1>
+<p class="text-slate-100 text-lg opacity-90">Bachelor 3 Computer Science (CS) — Academic Year 2023-2024</p>
+</div>
+<span class="material-symbols-outlined absolute -right-4 -bottom-4 text-white/10 text-[180px] select-none pointer-events-none">auto_awesome</span>
+</div>
+</div>
+<!-- Quick Action Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+<!-- Action 1 -->
+<button class="group flex flex-col items-start p-6 bg-primary rounded-lg border-2 border-primary hover:bg-[#b01642] transition-all shadow-md">
+<div class="bg-white/20 p-3 rounded-lg mb-4 text-white">
+<span class="material-symbols-outlined text-3xl">description</span>
+</div>
+<div class="text-left">
+<h3 class="text-white text-xl font-bold mb-1">Request Transcript</h3>
+<p class="text-slate-100/80 text-sm">Obtain your official certified transcript.</p>
+</div>
+</button>
+<!-- Action 2 -->
+<button class="group flex flex-col items-start p-6 bg-white dark:bg-slate-900 border-2 border-primary/20 hover:border-primary rounded-lg transition-all shadow-sm">
+<div class="bg-primary/10 p-3 rounded-lg mb-4 text-primary">
+<span class="material-symbols-outlined text-3xl">workspace_premium</span>
+</div>
+<div class="text-left">
+<h3 class="text-slate-900 dark:text-slate-100 text-xl font-bold mb-1">Request Certificate / Diploma</h3>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Certificate of enrollment or graduation diploma.</p>
+</div>
+</button>
+</div>
+<!-- Requests Section -->
+<div>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">My Active Requests</h2>
+<a class="text-primary font-semibold text-sm hover:underline" href="#">View history</a>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Request Item 1 -->
+<div class="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 mt-1">
+<span class="material-symbols-outlined">pending_actions</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Transcript - Semester 5</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Request submitted on October 12, 2023</p>
+<div class="mt-3 flex items-center gap-3">
+<div class="w-48 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 50%;"></div>
+</div>
+<span class="text-xs font-bold text-slate-600 dark:text-slate-400">Step 2/4</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-bold rounded-full uppercase tracking-wider">Processing</span>
+<button class="text-slate-400 hover:text-primary p-2 rounded-lg">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Request Item 2 -->
+<div class="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 mt-1">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Certificate of Enrollment</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Request submitted on October 05, 2023</p>
+<div class="mt-3 flex items-center gap-3">
+<div class="w-48 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-500 h-full rounded-full" style="width: 100%;"></div>
+</div>
+<span class="text-xs font-bold text-slate-600 dark:text-slate-400">Completed</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-full uppercase tracking-wider">Ready to Download</span>
+<button class="flex items-center gap-1 text-primary text-sm font-bold hover:underline p-2 rounded-lg"><span class="material-symbols-outlined text-sm">download</span> Download</button>
+</div>
+</div>
+</div>
+<!-- Request Item 3 -->
+<div class="p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-start gap-4">
+<div class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 mt-1">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+</div>
+<div>
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Certificate of Enrollment</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Request submitted on September 28, 2023</p>
+<div class="mt-3 flex items-center gap-3">
+<div class="w-48 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 25%;"></div>
+</div>
+<span class="text-xs font-bold text-slate-600 dark:text-slate-400">Step 1/4</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-2">
+<span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold rounded-full uppercase tracking-wider">Received</span>
+<button class="text-slate-400 hover:text-primary p-2 rounded-lg">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Small -->
+<footer class="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+<p>© 2023 Digital University. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="hover:text-primary transition-colors" href="#">Technical Support</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Use</a>
+</div>
+</footer>
+</main>
+</div>
+<!-- Bottom Navigation for Mobile -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 lg:hidden px-6 py-3">
+<div class="flex justify-between items-center max-w-md mx-auto">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-[10px] font-medium">Request</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-[10px] font-medium">History</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

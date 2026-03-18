@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C8184A",
+                        "primary-hover": "#A6143D",
+                        "row-hover": "#F9E4EB",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13191f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem", 
+                        "lg": "0.5rem", 
+                        "xl": "0.75rem", 
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>Director Dashboard (Redesign)</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-sans text-slate-900 dark:text-slate-100">
+<div class="flex min-h-screen">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
+<div class="p-6 flex flex-col gap-6">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">leaderboard</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-sm font-bold leading-tight">Direction</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Portail Administratif</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<!-- Updated Active Item Style: Left Border and Primary Text -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-r-lg bg-primary/10 text-primary border-l-4 border-primary" href="#">
+<span class="material-symbols-outlined text-primary">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-sm font-medium">Calendar</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Students</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">history_toggle_off</span>
+<span class="text-sm font-medium">Attendance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-y-auto">
+<!-- Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-8 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<h2 class="text-lg font-bold">Analytics Dashboard</h2>
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-1.5 text-sm focus:ring-2 focus:ring-primary/50" placeholder="Search..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Button color maintained/ensured as #C8184A -->
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary-hover transition-all shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>Export CSV</span>
+</button>
+<div class="w-px h-6 bg-slate-200 dark:bg-slate-700"></div>
+<div class="h-10 w-10 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Photo de profil du directeur" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBz7CaWBufzaDGqc7ERdh-U5SQVS86Fy7p44QCTSam-qR7Rxrq2x8o0ch9sBATzpDktkzqt2JXySs3HCQMCu2VFZO0IUiRx236BtvvzDr_-UCyF4UXDmr40RMl-q7QYekrUwidnJcb8wQUu3pT37cdOA3ttDEK2GIdVkbFh-pCG3HmP3jk3l2Dv5nFDQsMuXK1dWcU8UOOs2pH8ULv_F9XSTHIG6z4MQmz0EaXiGPiI1LuIIdoM3UKF0VC2gCLi-LJQpc5ZtUY-EPBR')"></div>
+</div>
+</header>
+<div class="p-8 flex flex-col gap-8">
+<!-- Welcome Title -->
+<div>
+<h1 class="text-3xl font-black tracking-tight flex items-center gap-3">Analytics Dashboard <div class="h-1.5 w-12 bg-primary rounded-full hidden md:block mt-2"></div></h1>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Global overview of key performance indicators (KPI) of the institution.</p>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Global Absenteeism Rate</p>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-3xl font-bold">4.2%</span>
+<span class="text-emerald-500 text-sm font-medium flex items-center">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+                                0.5%
+                            </span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">At-Risk Students</p>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-3xl font-bold">12</span>
+<span class="text-rose-500 text-sm font-medium flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                                2
+                            </span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Requests This Month</p>
+<div class="flex items-baseline gap-2 mt-2">
+<span class="text-3xl font-bold">85</span>
+<span class="text-emerald-500 text-sm font-medium flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                                10%
+                            </span>
+</div>
+<p class="text-xs text-slate-400 mt-2">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Bar Chart -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="font-bold text-slate-800 dark:text-slate-100">At-Risk Students</h3>
+<p class="text-xs text-slate-400">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+<div class="text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg">October</div>
+</div>
+<div class="flex-1 flex items-end justify-between gap-4 h-48 px-2">
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 40%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">6A</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 65%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">6B</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 90%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">5A</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 25%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">5B</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 55%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">4A</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 30%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">4B</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1 group">
+<div class="w-full bg-primary/20 rounded-t-lg relative" style="height: 75%">
+<div class="absolute inset-0 bg-primary scale-x-0 group-hover:scale-x-100 origin-bottom transition-transform duration-300"></div>
+</div>
+<span class="text-[10px] font-bold text-slate-500">3A</span>
+</div>
+</div>
+</div>
+<!-- Line Chart -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="font-bold text-slate-800 dark:text-slate-100">At-Risk Students</h3>
+<p class="text-xs text-slate-400">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+<div class="text-xs font-semibold px-2 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-lg">+0.2%</div>
+</div>
+<div class="flex-1 relative mt-4">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 400 120">
+<defs>
+<lineargradient id="line-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#C8184A" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#C8184A" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,80 C50,90 100,20 150,60 C200,100 250,10 300,50 C350,90 400,30 400,30 L400,120 L0,120 Z" fill="url(#line-gradient)"></path>
+<path d="M0,80 C50,90 100,20 150,60 C200,100 250,10 300,50 C350,90 400,30 400,30" fill="none" stroke="#C8184A" stroke-linecap="round" stroke-width="2.5"></path>
+<circle cx="150" cy="60" fill="#C8184A" r="4"></circle>
+<circle cx="300" cy="50" fill="#C8184A" r="4"></circle>
+</svg>
+</div>
+<div class="flex justify-between mt-4 px-2">
+<span class="text-[10px] font-bold text-slate-400">Aug</span>
+<span class="text-[10px] font-bold text-slate-400">Sep</span>
+<span class="text-[10px] font-bold text-slate-400">Oct</span>
+</div>
+</div>
+</div>
+<!-- Table Section -->
+<div class="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800">
+<h3 class="font-bold text-slate-800 dark:text-slate-100">At-Risk Students</h3>
+<p class="text-xs text-slate-400 mt-1">Students exceeding the critical threshold for unjustified absences.</p>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+<th class="px-6 py-4">Student Name</th>
+<th class="px-6 py-4">Class</th>
+<th class="px-6 py-4 text-center">Absences</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<tr class="hover:bg-row-hover dark:hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Avatar étudiant" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDdaEnt4kVrdCjJYJBIqlS_O836Ag1gSZLkiKHfbnqIVDqcl4P9Yop3PGRPjUs8Kn4TS--_enpaXjgu23tWB8SqnS84EE7p1z_Bq11noao49ReMZx-4iWdGR9f8uGmAnYEPqpxFWQNkwpoACEZ87O8Ek217PkW-7BQundtJKEYHun_-Yi2Vry-4EVqcTbMzLfXtn9ue4ELp2Vlk5bY6C6t9-xOTyrs6wBOxdGn7pRtzwx2ZoyiRi9VM-GOyBGyvM9AmTIvByMhGTmTe')"></div>
+<span class="text-sm font-medium">Marc Lefebvre</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">3ème A</td>
+<td class="px-6 py-4 text-center text-sm font-bold">12</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Critical</span>
+</td>
+<td class="px-6 py-4 text-right">
+<!-- Action Link Color: #C8184A -->
+<button class="text-primary hover:underline text-sm font-bold">View profile</button>
+</td>
+</tr>
+<tr class="hover:bg-row-hover dark:hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Avatar étudiant" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCIEKlOlIcHRoOIHVoRYy2GO_7V1y6-Dc9F9p6jv52e6uNiA1UN6d9sZu623u3MSn9azlnoUumDdh7Pn_9G2aSrWPr8uyFO0MulXqz1TPYfrKT40pu2zgNm-fDHzMYzwudhj4J4p1IkvD08uvF7spM2-Pvp-euk8PsoAEZGmrxUvZKFFAq5EjbXmrxdfXFXyC2Sb0_RUcZVbDtJRjVhzDooMjRB8gAKogFBYoayuXJgIZAUhSJaZ5GM6FDYDcClTiA5uQpa6FkXqJ_C')"></div>
+<span class="text-sm font-medium">Sophie Durand</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">4ème B</td>
+<td class="px-6 py-4 text-center text-sm font-bold">8</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Warning</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:underline text-sm font-bold">View profile</button>
+</td>
+</tr>
+<tr class="hover:bg-row-hover dark:hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Avatar étudiant" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAJWdRLUSgoLil5hBvdpMKJfm8wNyVBWP4NKzWODAMPDPy_hJRKPRqjDchiP56IHGDWImgzfbDbNOAY4HGo4LU8gsSGUGpsPSN03Lnw1dJq8ejWpMAGhyEUVI0JH71_w3ncJoCLPo8FfvaIgws4-NpMKz5iOuMNE7nq77N2Qo-Ho0OfF2F3e_XjI-rcMSmVTN5YjVrIxdTd75owmhmKLWYviu9mwYC-EdkPIASkfa3oxSoGle2mCWg6SXL9eeI3Pm4RxX1T5pjkNLmu')"></div>
+<span class="text-sm font-medium">Léa Martin</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">6ème A</td>
+<td class="px-6 py-4 text-center text-sm font-bold">7</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Warning</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:underline text-sm font-bold">View profile</button>
+</td>
+</tr>
+<tr class="hover:bg-row-hover dark:hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-slate-200 bg-cover bg-center" data-alt="Avatar étudiant" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC9wSIojs3B-2jpxOHw2dnEd8JJ3h8dMO_s9WdpxWis15GW4cJSE5QRlHSehPwUX35qpQ1Nb6-B_DtoBGYQhB72VyVM_7TP0oMhuSjPLCPPVhx-zHLACqYPYtRTkPn1Iz0NbPKBTWRjETkXRVPgKdswastr9R--pj1HYtW9SNKcRddKPYQK_B6AtlUY2ZJRlqs8Iohm2LUAJUZyyvlkewZhbLX5fM0HuHYTF928JCoB2wMm6bN3NifLIRU0yZv1bfz0sgjPOnRgvlzo')"></div>
+<span class="text-sm font-medium">Thomas Petit</span>
+</div>
+</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">5ème A</td>
+<td class="px-6 py-4 text-center text-sm font-bold">15</td>
+<td class="px-6 py-4">
+<span class="px-2 py-1 rounded-lg text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Critical</span>
+</td>
+<td class="px-6 py-4 text-right">
+<button class="text-primary hover:underline text-sm font-bold">View profile</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+<button class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">View all at-risk students</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

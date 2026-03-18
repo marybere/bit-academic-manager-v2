@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html lang="fr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#C8184A",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13191f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>Attendance Sheet - Licence 3 Computer Science</title>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-sans text-slate-900 dark:text-slate-100">
+<div class="relative flex min-h-screen w-full flex-col pb-24 overflow-x-hidden">
+<!-- Header Section -->
+<header class="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center p-4 justify-between">
+<button class="text-primary flex size-10 shrink-0 items-center justify-center hover:bg-primary/10 rounded-lg transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight flex-1 text-center truncate px-2">
+                Licence 3 Computer Science
+            </h1>
+<div class="size-10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">more_vert</span>
+</div>
+</div>
+<!-- Date Selector Component -->
+<div class="px-4 pb-4">
+<div class="bg-white dark:bg-slate-800 rounded-lg p-3 shadow-sm border border-primary/5">
+<div class="flex items-center justify-between mb-2">
+<button class="text-primary p-1 hover:bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<p class="text-slate-900 dark:text-slate-100 text-sm font-bold">October 2023</p>
+<button class="text-primary p-1 hover:bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-7 gap-1">
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">M</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">T</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">W</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">T</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">F</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">S</span>
+<span class="text-slate-400 text-[10px] font-bold text-center uppercase">S</span>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-400">2</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-400">3</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-400">4</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium bg-primary text-white rounded-full">5</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-700 dark:text-slate-300">6</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-700 dark:text-slate-300">7</div>
+<div class="flex items-center justify-center h-8 w-full text-xs font-medium text-slate-700 dark:text-slate-300">8</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Search and Stats Section -->
+<main class="flex flex-col flex-1 px-4 py-4 gap-4">
+<!-- Stats Cards -->
+<div class="flex gap-3">
+<div class="flex-1 bg-primary/10 dark:bg-primary/20 rounded-lg p-4 border border-primary/20">
+<p class="text-primary dark:text-primary/80 text-xs font-medium uppercase tracking-wider mb-1">PRESENT</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold">28</p>
+</div>
+<div class="flex-1 bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-100 dark:border-red-900/30">
+<p class="text-red-600 dark:text-red-400 text-xs font-medium uppercase tracking-wider mb-1">Absent</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-bold">2</p>
+</div>
+</div>
+<!-- Search Input -->
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-400">search</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 bg-white dark:bg-slate-800 border-none rounded-lg text-slate-900 dark:text-slate-100 ring-1 ring-primary/10 focus:ring-2 focus:ring-primary placeholder:text-slate-400 text-sm" placeholder="Search student..." type="text"/>
+</div>
+<!-- Students List -->
+<div class="flex flex-col gap-2">
+<h2 class="text-sm font-semibold text-slate-500 uppercase tracking-widest px-1 mt-2">Student List</h2>
+<!-- Student Row 1 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/5 shadow-sm">
+<div class="shrink-0 relative">
+<img alt="Jean Dupont" class="size-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0vokRRwVuBQfAC2IK85N_5f_1IGEqntq5t4m8HXaX-LkA63Afp_7xsOi2-ygrau5cUUy6PylaNsuMWAZlgdtufEHbS76wkdWPnQ4xoevx-nUiKbiFw3w2z4aJepHoIGHD-ZrXmS8jtD2pl2GgSNOa-34STh5acONf9sCIvqDQ0N3VBhHxQgIHMJ8pf2lCALrPlPEiOr-UYgoKU79F_EmmrZFQs_Fuz4qkSBBZ91pcmKfCbgaVnMPTV1acVQJ-_xvB8BI3PEvUraMP"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Jean Dupont</p>
+<p class="text-green-600 dark:text-green-400 text-xs font-medium">Present</p>
+</div>
+<div class="shrink-0">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Student Row 2 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/5 shadow-sm">
+<div class="shrink-0 relative">
+<img alt="Marie Curie" class="size-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAtS86B566AGRBR8n7hlBMHRLfb1zmAPg_6noZbvz5GXy7KnwTrFMC9f6_KapaqSxuESbGM2MVlexR9OBb_sHNPl3UI6CureC7uGycC5Tr0rdRw_5lXGwKCO32dfwden7c32BZ-Ss6ZVQwpcou-8pMM-X-CcUDcOBGUVdXhheS4gPyj5ISAJFU6oXQOFNZ_1M41E5QQP7CgAuShsIbeWG00f2aYEn11xMRBhW_ZlDQ8gRXKoVBOO2qY494y53Xl7tni5cxjLcCb9Unr"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Marie Curie</p>
+<p class="text-green-600 dark:text-green-400 text-xs font-medium">Present</p>
+</div>
+<div class="shrink-0">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Student Row 3 (Absent) -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/5 shadow-sm">
+<div class="shrink-0 relative">
+<img alt="Alan Turing" class="size-12 rounded-full object-cover grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzcsNIlg44zmZiDI2NVzNdvQhtCSdufLQ1gSyrF0KXaN3oNGfUxxwFPo6kf3zYfslCVh5knzLHe_pq18FjPbqFKocvoI_He8ZTHOA4A5N_fEKUEsAR4sFFmii4oCnZhBdRpcBUrbDtQ1Mt8XkXsvPpKt46Pard-eUdY0wdwoLA1BGIgVHGtrxJ6RnPdI0tg4bk3iy1YPcEY45k_i1gtv9MGK79THZAWdhAi-3hthSNXXpgg5ovrx2vGwrcxtXPeLB3qkUgrmZ6ZKWz"/>
+<div class="absolute bottom-0 right-0 size-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Alan Turing</p>
+<p class="text-red-600 dark:text-red-400 text-xs font-medium">Absent</p>
+</div>
+<div class="shrink-0">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Student Row 4 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/5 shadow-sm">
+<div class="shrink-0 relative">
+<img alt="Ada Lovelace" class="size-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM2sgy84aSKpGonS-4kt7HLfVnBWIaszkCz_xMusUqB95HBvcWFSpg-4e8YPT5lfYWIvRpS9W2ia76RlXIAIe2k9jNduedBGlGs32KnmxJWcmAnYdAjhowGeGtcV1RBADzRNpAQrxjLehb5sOpABelph9FS1iSNRRMpMd5y_gu30MheteKbNKyEqefJ8zVHzRqEGc-UgMvOPKP3qgQS2E7JYMoLIPTLqzR6GlZQYJTpbNbTtLaKUTZdo_Fx6KjbKq242m-G9i84-ct"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Ada Lovelace</p>
+<p class="text-green-600 dark:text-green-400 text-xs font-medium">Present</p>
+</div>
+<div class="shrink-0">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<!-- Student Row 5 -->
+<div class="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/5 shadow-sm">
+<div class="shrink-0 relative">
+<img alt="Grace Hopper" class="size-12 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAHh0j1mh5lyjMc9pn87XTaT2ne1IGEs7Kl1C2L1sXMDKGdXiksQscmQKQTbMRmTenxl827gUQrhnoM0aNMGAwRTYIY0VjUs9g9vkL5gGujCiSZWY5Enm45mNYZ2yNZy9sseDIEgQEc-p9ynm5fv8QZJnRlO6BwauBzS_pEzQKGDpoLf1mb0AS7TXiBkB1pIZCDasUWi7PQbEiA89IR-WV4OTotjSI9BSZdQXjjIpystc6m2RG_6aL33RtzdnYi7Yvn6kcRfGbVxyS"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-tight">Grace Hopper</p>
+<p class="text-green-600 dark:text-green-400 text-xs font-medium">Present</p>
+</div>
+<div class="shrink-0">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-red-500 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</main>
+<!-- Sticky Footer Action -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light dark:via-background-dark to-transparent">
+<button class="w-full bg-primary text-white font-bold py-4 rounded-lg shadow-lg shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-base"><span class="material-symbols-outlined">check_circle</span> Submit Attendance</button>
+</div>
+</div>
+</body></html>
