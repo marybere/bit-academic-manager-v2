@@ -214,10 +214,10 @@
   .signup-row a:hover { text-decoration: underline; }
 
   /* Responsive: stack on small screens */
-  @media (max-width: 640px) {
-    .login-card { flex-direction: column; }
-    .left-panel { min-height: 200px; justify-content: flex-end; }
-    .right-panel { width: 100%; }
+  @media (max-width: 768px) {
+    .login-card { flex-direction: column; max-height: none; }
+    .left-panel { min-height: 220px; width: 100%; justify-content: flex-end; }
+    .right-panel { width: 100%; padding: 32px 24px; min-height: unset; }
   }
 </style>
 </head>
