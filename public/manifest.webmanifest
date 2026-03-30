@@ -1,0 +1,22 @@
+{
+  "name": "BIT Academic Manager",
+  "short_name": "BIT",
+  "description": "Burkina Institute of Technology — Academic Management System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#C8184A",
+  "icons": [
+    {
+      "src": "/icons/bit-logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/bit-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

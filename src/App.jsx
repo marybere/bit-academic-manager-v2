@@ -1,24 +1,120 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import ScreenViewer from './pages/ScreenViewer'
+import { AuthProvider } from './context/AuthContext'
+import ProtectedRoute from './components/ProtectedRoute'
+
+import LoginPage from './pages/LoginPage'
+
+// Chef de classe
+import ChefDashboardPage      from './pages/chef/ChefDashboardPage'
+import AttendancePage         from './pages/chef/AttendancePage'
+import AttendanceHistoryPage  from './pages/chef/AttendanceHistoryPage'
+
+// Secrétaire
+import SecretaireDashboardPage from './pages/secretaire/SecretaireDashboardPage'
+import ClassManagementPage     from './pages/secretaire/ClassManagementPage'
+import RequestDetailPage       from './pages/secretaire/RequestDetailPage'
+
+// Étudiant
+import StudentDashboardPage from './pages/etudiant/StudentDashboardPage'
+import NewRequestPage       from './pages/etudiant/NewRequestPage'
+import TrackRequestPage     from './pages/etudiant/TrackRequestPage'
+
+// Directeur
+import DirecteurAnalyticsPage from './pages/directeur/DirecteurAnalyticsPage'
+
+// Validation (CAISSE / IT / LABORATOIRE / SECRETAIRE)
+import ValidationPage from './pages/validation/ValidationPage'
+
+// Admin
+import AdminSettingsPage from './pages/admin/AdminSettingsPage'
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/login" element={<ScreenViewer src="/screens/login.html" title="Login" />} />
-        <Route path="/chef/dashboard" element={<ScreenViewer src="/screens/chef-dashboard.html" title="Chef Dashboard" />} />
-        <Route path="/chef/attendance" element={<ScreenViewer src="/screens/attendance.html" title="Attendance" />} />
-        <Route path="/chef/history" element={<ScreenViewer src="/screens/attendance-history.html" title="Attendance History" />} />
-        <Route path="/secretaire/dashboard" element={<ScreenViewer src="/screens/secretary-dashboard.html" title="Secretary Dashboard" />} />
-        <Route path="/secretaire/request/:id" element={<ScreenViewer src="/screens/request-detail.html" title="Request Detail" />} />
-        <Route path="/etudiant/dashboard" element={<ScreenViewer src="/screens/student-dashboard.html" title="Student Dashboard" />} />
-        <Route path="/etudiant/new-request" element={<ScreenViewer src="/screens/new-request.html" title="New Request" />} />
-        <Route path="/etudiant/track" element={<ScreenViewer src="/screens/request-tracking.html" title="Track Request" />} />
-        <Route path="/directeur/analytics" element={<ScreenViewer src="/screens/director-analytics.html" title="Director Analytics" />} />
-        <Route path="/validation" element={<ScreenViewer src="/screens/validation.html" title="Validation" />} />
-        <Route path="/admin/settings" element={<ScreenViewer src="/screens/admin-settings.html" title="Admin Settings" />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* Chef de classe */}
+          <Route path="/chef/dashboard" element={
+            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+              <ChefDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chef/attendance" element={
+            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+              <AttendancePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chef/history" element={
+            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+              <AttendanceHistoryPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Secrétaire */}
+          <Route path="/secretaire/dashboard" element={
+            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+              <SecretaireDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/secretaire/classes" element={
+            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+              <ClassManagementPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/secretaire/request/:id" element={
+            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+              <RequestDetailPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Étudiant */}
+          <Route path="/etudiant/dashboard" element={
+            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+              <StudentDashboardPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/etudiant/new-request" element={
+            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+              <NewRequestPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/etudiant/track" element={
+            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+              <TrackRequestPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/etudiant/track/:id" element={
+            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+              <TrackRequestPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Directeur */}
+          <Route path="/directeur/analytics" element={
+            <ProtectedRoute roles={['DIRECTEUR','ADMIN']}>
+              <DirecteurAnalyticsPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Validation */}
+          <Route path="/validation" element={
+            <ProtectedRoute roles={['CAISSE','IT','LABORATOIRE','SECRETAIRE','ADMIN']}>
+              <ValidationPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Admin */}
+          <Route path="/admin/settings" element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <AdminSettingsPage />
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   )
 }
