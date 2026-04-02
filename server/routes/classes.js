@@ -10,6 +10,13 @@ router.get(
   ctrl.getAllClasses
 );
 
+// GET /api/classes/:classId/info  ← before /:classId/students to avoid collision
+router.get(
+  '/:classId/info',
+  verifyToken,
+  ctrl.getClassInfo
+);
+
 // GET /api/classes/:classId/students/export  ← must be before /:classId/students
 router.get(
   '/:classId/students/export',

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
+import NotificationBell from '../../components/NotificationBell'
 
 const FILIERE_COLOR = {
   CS: { bg: '#dbeafe', color: '#1d4ed8', label: 'Computer Science' },
@@ -243,6 +244,7 @@ export default function ClassManagementPage() {
               {classes.length} classes · {classes.reduce((n, c) => n + parseInt(c.student_count || 0), 0)} students total
             </p>
           </div>
+          <NotificationBell />
         </header>
 
         {/* Search bar */}

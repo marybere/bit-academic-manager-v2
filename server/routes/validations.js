@@ -13,6 +13,14 @@ router.get(
   ctrl.getPending
 );
 
+// GET /api/validations/my-history  ← before /:requestId
+router.get(
+  '/my-history',
+  verifyToken,
+  requireRole(...VALIDATION_ROLES),
+  ctrl.getMyHistory
+);
+
 // GET /api/validations/:requestId
 router.get(
   '/:requestId',

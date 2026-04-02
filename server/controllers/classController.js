@@ -295,4 +295,19 @@ const resetStudentPassword = async (req, res) => {
   }
 };
 
-module.exports = { getAllClasses, getClassStudents, addStudent, removeStudent, exportStudents, changeChef, resetStudentPassword };
+// ── GET /api/classes/:classId/info ────────────────────────────────────────────
+// Returns basic class info (id, nom, filiere, niveau) — any authenticated user
+const getClassInfo = async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT id, nom, filiere, niveau FROM classes WHERE id = $1',
+      [req.params.classId]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Class not found' });
+    res.json({ classe: rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { getAllClasses, getClassStudents, addStudent, removeStudent, exportStudents, changeChef, resetStudentPassword, getClassInfo };

@@ -1,11 +1,14 @@
 const db = require('../config/db');
 
 // ── GET /api/notifications/my ─────────────────────────────────────────────────
+// Returns only unread notifications by default (?all=true to include read)
 const getMyNotifications = async (req, res) => {
   try {
+    const showAll = req.query.all === 'true';
     const { rows } = await db.query(
       `SELECT * FROM notifications
         WHERE user_id = $1
+        ${showAll ? '' : 'AND read = false'}
         ORDER BY created_at DESC
         LIMIT 50`,
       [req.user.id]

@@ -7,7 +7,7 @@ const { requireRole } = require('../middleware/roles');
 router.post(
   '/',
   verifyToken,
-  requireRole('STUDENT'),
+  requireRole('STUDENT', 'CHEF_CLASSE'),
   ctrl.create
 );
 
@@ -15,7 +15,7 @@ router.post(
 router.get(
   '/my',
   verifyToken,
-  requireRole('STUDENT'),
+  requireRole('STUDENT', 'CHEF_CLASSE'),
   ctrl.getMy
 );
 
@@ -81,6 +81,14 @@ router.put(
   verifyToken,
   requireRole('SECRETAIRE', 'ADMIN'),
   ctrl.sendPdf
+);
+
+// PUT /api/requests/:id/reopen — dept agent reopens a pending-justification request
+router.put(
+  '/:id/reopen',
+  verifyToken,
+  requireRole('CAISSE', 'IT', 'LABORATOIRE'),
+  ctrl.reopenRequest
 );
 
 module.exports = router;

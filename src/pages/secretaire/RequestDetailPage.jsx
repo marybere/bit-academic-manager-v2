@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
+import NotificationBell from '../../components/NotificationBell'
 
 const STATUT_STYLE = {
   EN_ATTENTE:    { bg: '#fef9c3', color: '#854d0e', label: 'Pending'    },
@@ -79,6 +80,7 @@ export default function RequestDetailPage() {
           <button style={s.backBtn} onClick={() => navigate('/secretaire/dashboard')}>
             <span className="material-icons" style={{fontSize:'18px',marginRight:'4px'}}>arrow_back</span>Back to Dashboard
           </button>
+          <NotificationBell />
         </div>
 
         {loading ? <div style={s.center}>Loading...</div>

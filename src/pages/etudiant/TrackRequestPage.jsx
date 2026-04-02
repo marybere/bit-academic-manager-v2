@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
+import NotificationBell from '../../components/NotificationBell'
 
 const STATUT_STYLE = {
   EN_ATTENTE:    { bg:'#fef9c3', color:'#854d0e', label:'Pending'    },
@@ -9,7 +10,8 @@ const STATUT_STYLE = {
   APPROUVE:      { bg:'#ede9fe', color:'#5b21b6', label:'Approved'   },
   PRET:          { bg:'#dcfce7', color:'#166534', label:'Ready'      },
   RETIRE:        { bg:'#f1f5f9', color:'#475569', label:'Collected'  },
-  REJETE:        { bg:'#fee2e2', color:'#991b1b', label:'Rejected'   },
+  REJETE:                  { bg:'#fee2e2', color:'#991b1b', label:'Rejected'             },
+  EN_ATTENTE_JUSTIFICATION:{ bg:'#fff7ed', color:'#92400e', label:'Pending Justification' },
 }
 const TYPE_LABEL = { RELEVE_NOTES:'Transcript', ATTESTATION_INSCRIPTION:'Enrollment Cert.', DIPLOME:'Diploma', AUTRE:'Other' }
 const SERVICE_ICON = { CAISSE:'payments', IT:'computer', LABORATOIRE:'science', SECRETAIRE:'badge' }
@@ -25,6 +27,15 @@ export default function TrackRequestPage() {
   const [validations,  setValidations]  = useState([])
   const [loadingList,  setLoadingList]  = useState(true)
   const [loadingDetail,setLoadingDetail]= useState(false)
+  const [classInfo,    setClassInfo]    = useState(null)
+
+  useEffect(() => {
+    if (user?.classe_id) {
+      api.get(`/classes/${user.classe_id}/info`)
+        .then(res => setClassInfo(res.data.classe))
+        .catch(() => {})
+    }
+  }, [user])
 
   // Load all requests
   useEffect(() => {
@@ -73,7 +84,10 @@ export default function TrackRequestPage() {
         <div style={s.sidebarBottom}>
           <div style={s.userInfo}>
             <div style={s.avatar}>{user?.prenom?.[0]}{user?.nom?.[0]}</div>
-            <div><div style={s.userName}>{user?.prenom} {user?.nom}</div><div style={s.userRole}>Student</div></div>
+            <div>
+              <div style={s.userName}>{user?.prenom} {user?.nom}</div>
+              <div style={s.userRole}>{classInfo ? `${classInfo.niveau} ${classInfo.filiere}` : 'Student'}</div>
+            </div>
           </div>
           <button style={s.logoutBtn} onClick={logout}><span className="material-icons" style={{fontSize:'18px'}}>logout</span></button>
         </div>
@@ -85,9 +99,12 @@ export default function TrackRequestPage() {
             <h1 style={s.pageTitle}>Track Requests</h1>
             <p style={s.pageSubtitle}>Monitor the status of your document requests</p>
           </div>
-          <button style={s.newBtn} onClick={() => navigate('/etudiant/new-request')}>
-            <span className="material-icons" style={{fontSize:'18px',marginRight:'6px'}}>add_circle</span>New Request
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <NotificationBell />
+            <button style={s.newBtn} onClick={() => navigate('/etudiant/new-request')}>
+              <span className="material-icons" style={{fontSize:'18px',marginRight:'6px'}}>add_circle</span>New Request
+            </button>
+          </div>
         </header>
 
         <div style={s.layout}>
@@ -190,52 +207,40 @@ export default function TrackRequestPage() {
                     </div>
                   </div>
                 )}
+                {selected.statut === 'EN_ATTENTE_JUSTIFICATION' && (
+                  <div style={s.justificationBanner}>
+                    <span className="material-icons" style={{fontSize:'20px'}}>warning</span>
+                    <div>
+                      <strong>Action Required — Pending Justification</strong>
+                      {selected.rejection_service && (
+                        <div style={{fontSize:'13px',marginTop:'4px'}}>
+                          Flagged by: <strong>{SERVICE_LABEL[selected.rejection_service] || selected.rejection_service}</strong>
+                        </div>
+                      )}
+                      {selected.rejection_reason && (
+                        <div style={{fontSize:'13px',marginTop:'2px'}}>
+                          Reason: "{selected.rejection_reason}"
+                        </div>
+                      )}
+                      <div style={{fontSize:'13px',marginTop:'6px'}}>
+                        Please contact the Secretary Office to resolve this issue. Once resolved, the department will reopen your request.
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Validation timeline */}
                 <div style={s.detailCard}>
                   <div style={s.detailCardHeader}>
                     <span className="material-icons" style={{color:'#f59e0b',marginRight:'8px',fontSize:'20px'}}>timeline</span>
-                    <span style={s.detailCardTitle}>Validation Progress</span>
+                    <span style={s.detailCardTitle}>Progress</span>
                   </div>
                   {loadingDetail ? (
                     <div style={s.center}>Loading...</div>
+                  ) : selected.type === 'RELEVE_NOTES' ? (
+                    <TranscriptTimeline statut={selected.statut} format={selected.format} />
                   ) : (
-                    <div style={s.timeline}>
-                      {['CAISSE','IT','LABORATOIRE'].map((svc, idx) => {
-                        const val = validations.find(v => v.service === svc)
-                        const done     = val?.statut === 'VALIDE'
-                        const rejected = val?.statut === 'REJETE'
-                        const isLast   = idx === 2
-                        return (
-                          <div key={svc} style={s.timelineRow}>
-                            <div style={s.timelineLeft}>
-                              <div style={{...s.timelineDot, background: rejected?'#ef4444': done?'#10b981':'#e2e8f0'}}>
-                                <span className="material-icons" style={{fontSize:'16px',color:done||rejected?'#fff':'#94a3b8'}}>
-                                  {SERVICE_ICON[svc]}
-                                </span>
-                              </div>
-                              {!isLast && <div style={{...s.timelineLine, background: done?'#10b981':'#e2e8f0'}} />}
-                            </div>
-                            <div style={s.timelineBody}>
-                              <div style={s.timelineSvc}>{SERVICE_LABEL[svc]}</div>
-                              <div style={{fontSize:'12px', color: rejected?'#ef4444': done?'#10b981':'#94a3b8', marginTop:'2px'}}>
-                                {rejected ? 'Rejected' : done
-                                  ? `Approved${val.date_validation ? ' · '+new Date(val.date_validation).toLocaleDateString('fr-FR') : ''}`
-                                  : 'Pending'}
-                              </div>
-                              {val?.commentaire && (
-                                <div style={s.timelineComment}>"{val.commentaire}"</div>
-                              )}
-                            </div>
-                            <div style={{...s.stepBadge,
-                              background: rejected?'#fee2e2': done?'#dcfce7':'#f1f5f9',
-                              color: rejected?'#991b1b': done?'#166534':'#94a3b8'}}>
-                              {idx+1}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                    <DeptTimeline statut={selected.statut} validations={validations} />
                   )}
                 </div>
               </>
@@ -243,6 +248,105 @@ export default function TrackRequestPage() {
           </div>
         </div>
       </main>
+    </div>
+  )
+}
+
+// ── Transcript timeline (no dept validation) ──────────────────────────────────
+function TranscriptTimeline({ statut, format }) {
+  const steps = [
+    { key: 'SUBMITTED',   label: 'Submitted',   icon: 'upload_file',   done: true },
+    { key: 'PROCESSING',  label: 'Processing',  icon: 'pending_actions',
+      done: ['EN_TRAITEMENT','PRET','RETIRE'].includes(statut) },
+    { key: 'READY',       label: format === 'PDF' ? 'PDF Sent to Email' : 'Ready for Pickup',
+      icon: format === 'PDF' ? 'mark_email_read' : 'event_available',
+      done: ['PRET','RETIRE'].includes(statut) },
+    { key: 'COLLECTED',   label: 'Collected',   icon: 'task_alt',
+      done: statut === 'RETIRE' },
+  ]
+  return (
+    <div style={s.timeline}>
+      {steps.map((step, idx) => {
+        const isLast = idx === steps.length - 1
+        return (
+          <div key={step.key} style={s.timelineRow}>
+            <div style={s.timelineLeft}>
+              <div style={{...s.timelineDot, background: step.done ? '#10b981' : '#e2e8f0'}}>
+                <span className="material-icons" style={{fontSize:'16px', color: step.done ? '#fff' : '#94a3b8'}}>{step.icon}</span>
+              </div>
+              {!isLast && <div style={{...s.timelineLine, background: step.done ? '#10b981' : '#e2e8f0'}} />}
+            </div>
+            <div style={s.timelineBody}>
+              <div style={s.timelineSvc}>{step.label}</div>
+              <div style={{fontSize:'12px', color: step.done ? '#10b981' : '#94a3b8', marginTop:'2px'}}>
+                {step.done ? 'Done' : 'Pending'}
+              </div>
+            </div>
+            <div style={{...s.stepBadge, background: step.done ? '#dcfce7' : '#f1f5f9', color: step.done ? '#166534' : '#94a3b8'}}>
+              {idx + 1}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Attestation / Diploma timeline (dept validation chain) ────────────────────
+function DeptTimeline({ statut, validations }) {
+  const allApproved = statut === 'APPROUVE' || statut === 'PRET' || statut === 'RETIRE'
+  const isReady     = statut === 'PRET' || statut === 'RETIRE'
+  const isCollected = statut === 'RETIRE'
+
+  const deptSteps = ['CAISSE', 'IT', 'LABORATOIRE']
+  const extraSteps = [
+    { key: 'SUBMITTED', label: 'Submitted',            icon: 'upload_file',    done: true },
+    ...deptSteps.map(svc => {
+      const val = validations.find(v => v.service === svc)
+      return {
+        key: svc,
+        label: SERVICE_LABEL[svc],
+        icon: SERVICE_ICON[svc],
+        done: val?.statut === 'VALIDE',
+        rejected: val?.statut === 'REJETE',
+        comment: val?.commentaire,
+        date: val?.date_validation,
+      }
+    }),
+    { key: 'APPROVED', label: 'All Departments Approved', icon: 'verified',    done: allApproved },
+    { key: 'READY',    label: 'Ready (Secretary Action)', icon: 'event_available', done: isReady },
+    { key: 'COLLECTED',label: 'Collected',               icon: 'task_alt',     done: isCollected },
+  ]
+
+  return (
+    <div style={s.timeline}>
+      {extraSteps.map((step, idx) => {
+        const isLast = idx === extraSteps.length - 1
+        return (
+          <div key={step.key} style={s.timelineRow}>
+            <div style={s.timelineLeft}>
+              <div style={{...s.timelineDot, background: step.rejected ? '#ef4444' : step.done ? '#10b981' : '#e2e8f0'}}>
+                <span className="material-icons" style={{fontSize:'16px', color: step.done || step.rejected ? '#fff' : '#94a3b8'}}>{step.icon}</span>
+              </div>
+              {!isLast && <div style={{...s.timelineLine, background: step.done ? '#10b981' : '#e2e8f0'}} />}
+            </div>
+            <div style={s.timelineBody}>
+              <div style={s.timelineSvc}>{step.label}</div>
+              <div style={{fontSize:'12px', color: step.rejected ? '#ef4444' : step.done ? '#10b981' : '#94a3b8', marginTop:'2px'}}>
+                {step.rejected ? 'Rejected' : step.done
+                  ? `Approved${step.date ? ' · ' + new Date(step.date).toLocaleDateString('fr-FR') : ''}`
+                  : 'Pending'}
+              </div>
+              {step.comment && <div style={s.timelineComment}>"{step.comment}"</div>}
+            </div>
+            <div style={{...s.stepBadge,
+              background: step.rejected ? '#fee2e2' : step.done ? '#dcfce7' : '#f1f5f9',
+              color: step.rejected ? '#991b1b' : step.done ? '#166534' : '#94a3b8'}}>
+              {idx + 1}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -298,7 +402,8 @@ const s = {
   infoGrid:     { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'14px' },
   approvedBanner:{ display:'flex', gap:'12px', background:'#ede9fe', border:'1px solid #c4b5fd', borderRadius:'10px', padding:'14px 16px', color:'#5b21b6', alignItems:'flex-start' },
   readyBanner:  { display:'flex', gap:'12px', background:'#dcfce7', border:'1px solid #86efac', borderRadius:'10px', padding:'14px 16px', color:'#166534', alignItems:'flex-start' },
-  rejectedBanner:{ display:'flex', gap:'12px', background:'#fee2e2', border:'1px solid #fca5a5', borderRadius:'10px', padding:'14px 16px', color:'#991b1b', alignItems:'flex-start' },
+  rejectedBanner:    { display:'flex', gap:'12px', background:'#fee2e2', border:'1px solid #fca5a5', borderRadius:'10px', padding:'14px 16px', color:'#991b1b', alignItems:'flex-start' },
+  justificationBanner:{ display:'flex', gap:'12px', background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:'10px', padding:'14px 16px', color:'#92400e', alignItems:'flex-start' },
   timeline:     { display:'flex', flexDirection:'column', gap:'0' },
   timelineRow:  { display:'flex', gap:'12px', alignItems:'flex-start' },
   timelineLeft: { display:'flex', flexDirection:'column', alignItems:'center', width:'32px', flexShrink:0 },

@@ -15,56 +15,75 @@ const roleToService = (role) => {
 };
 
 // ── GET /api/validations/pending ──────────────────────────────────────────────
-// Returns requests that are pending for the calling agent's service.
+// Returns requests pending for the calling agent's service.
 const getPending = async (req, res) => {
-  const service = roleToService(req.user.role);
+  const agentRole = req.user.role;
+  const service   = roleToService(agentRole);
 
   if (!service) {
     return res.status(403).json({ error: 'Your role does not perform validations' });
   }
 
-  const step = WORKFLOW.find((w) => w.service === service);
-
   try {
-    // A request is "pending for this service" when:
-    //  1. No validation row exists for this service yet (or it's EN_ATTENTE)
-    //  2. All prerequisite services have been VALIDE
-    let prerequisiteClause = '';
-    if (step.requires.length > 0) {
-      // All required services must be VALIDE
-      const quotedServices = step.requires.map((s) => `'${s}'`).join(', ');
-      prerequisiteClause = `
-        AND (
-          SELECT COUNT(*)
-            FROM validations pv
-           WHERE pv.request_id = r.id
-             AND pv.service IN (${quotedServices})
-             AND pv.statut = 'VALIDE'
-        ) = ${step.requires.length}
-      `;
-    }
+    console.log('getPending called for:', agentRole, '→ service:', service);
 
-    const sql = `
-      SELECT r.*,
-             u.nom, u.prenom, u.email, u.classe_id,
-             c.nom AS classe_nom,
-             v.statut AS validation_statut
-        FROM requests r
-        JOIN users u ON u.id = r.student_id
-        LEFT JOIN classes c ON c.id = u.classe_id
-        LEFT JOIN validations v
-               ON v.request_id = r.id AND v.service = $1
-       WHERE r.statut NOT IN ('RETIRE', 'REJETE')
-         AND (v.id IS NULL OR v.statut = 'EN_ATTENTE')
-         ${prerequisiteClause}
-       ORDER BY r.date_demande ASC
-    `;
+    // Debug: log all validations for this service regardless of status
+    const { rows: checkRows } = await db.query(
+      `SELECT v.id, v.statut AS v_statut, r.id AS req_id, r.statut AS req_statut
+         FROM validations v
+         JOIN requests r ON v.request_id = r.id
+        WHERE v.service = $1`,
+      [service]
+    );
+    console.log(`Total validations for ${service}:`, checkRows.length, checkRows);
 
-    const { rows } = await db.query(sql, [service]);
-    res.json({ service, pending: rows });
+    // Permissive main query — fetch all rows for this service where request is active
+    const { rows: allRows } = await db.query(
+      `SELECT DISTINCT
+         r.id,
+         r.type,
+         r.format,
+         r.statut AS request_statut,
+         r.date_demande,
+         r.notes,
+         r.rejection_service,
+         r.rejection_reason,
+         u.nom,
+         u.prenom,
+         u.email,
+         c.nom AS classe_nom,
+         v.id AS validation_id,
+         v.statut AS validation_statut,
+         v.commentaire AS my_commentaire,
+         v.date_validation AS my_validation_date
+       FROM validations v
+       JOIN requests r ON v.request_id = r.id
+       JOIN users u ON r.student_id = u.id
+       LEFT JOIN classes c ON u.classe_id = c.id
+       WHERE v.service = $1
+         AND r.statut IN ('EN_TRAITEMENT', 'EN_ATTENTE_JUSTIFICATION')
+       ORDER BY r.date_demande ASC`,
+      [service]
+    );
+
+    // Needs action: this dept's stub is EN_ATTENTE and request is EN_TRAITEMENT
+    const needsAction = allRows.filter(r =>
+      r.validation_statut === 'EN_ATTENTE' &&
+      r.request_statut === 'EN_TRAITEMENT'
+    );
+
+    // Pending justification: request flagged by THIS dept, awaiting student resolution
+    const pendingJustification = allRows.filter(r =>
+      r.request_statut === 'EN_ATTENTE_JUSTIFICATION' &&
+      r.rejection_service === service
+    );
+
+    console.log(`Needs action: ${needsAction.length}, Pending justification: ${pendingJustification.length}`);
+
+    res.json({ service, pending: needsAction, pendingJustification });
   } catch (err) {
-    console.error('getPending error:', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('getPending error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -73,6 +92,11 @@ const getPending = async (req, res) => {
 const validate = async (req, res) => {
   const { requestId }         = req.params;
   const { statut, commentaire } = req.body;
+
+  console.log('=== VALIDATION SUBMITTED ===');
+  console.log('Service:', req.user.role);
+  console.log('Request ID:', requestId);
+  console.log('Decision:', statut);
 
   if (!['VALIDE', 'REJETE'].includes(statut)) {
     return res.status(400).json({ error: "statut must be 'VALIDE' or 'REJETE'" });
@@ -87,15 +111,20 @@ const validate = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Confirm request exists
+    // Confirm request exists and get student info
     const { rows: reqRows } = await client.query(
-      'SELECT * FROM requests WHERE id = $1',
+      `SELECT r.*, u.nom, u.prenom FROM requests r
+         JOIN users u ON r.student_id = u.id
+        WHERE r.id = $1`,
       [requestId]
     );
     if (!reqRows[0]) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Request not found' });
     }
+
+    const studentName = `${reqRows[0].prenom} ${reqRows[0].nom}`;
+    const studentId   = reqRows[0].student_id;
 
     // Check prerequisites are met
     const step = WORKFLOW.find((w) => w.service === service);
@@ -130,38 +159,69 @@ const validate = async (req, res) => {
       [requestId, service, statut, commentaire || null, req.user.id]
     );
 
-    // If rejected at any step → block the whole request
+    const SERVICE_NAMES = { CAISSE: 'Finance Office', IT: 'IT Department', LABORATOIRE: 'Laboratory' };
+    const svcLabel = SERVICE_NAMES[service] || service;
+
+    // If rejected → request awaits student justification (NOT final rejection)
     if (statut === 'REJETE') {
       await client.query(
-        "UPDATE requests SET statut = 'REJETE' WHERE id = $1",
-        [requestId]
+        `UPDATE requests
+            SET statut            = 'EN_ATTENTE_JUSTIFICATION',
+                rejection_service = $1,
+                rejection_reason  = $2
+          WHERE id = $3`,
+        [service, commentaire || null, requestId]
       );
       await client.query('COMMIT');
-      return res.json({ validation: valRows[0] });
+
+      // Notify student
+      await createNotification(
+        studentId,
+        'Action Required — Request Pending Justification',
+        `Your request was flagged by ${svcLabel}${commentaire ? `. Reason: "${commentaire}"` : ''}. Please contact the Secretary Office to resolve this.`,
+        'WARNING', requestId, 'REQUEST'
+      );
+      console.log(`Notified student ${studentName} of rejection by ${svcLabel}`);
+
+      // Notify secretaries
+      const { rows: secs } = await db.query(
+        `SELECT id FROM users WHERE role = 'SECRETAIRE' AND active = true`
+      );
+      for (const sec of secs) {
+        await createNotification(
+          sec.id,
+          'Request Pending Justification',
+          `Request #${requestId} from ${studentName} flagged by ${svcLabel}${commentaire ? `: "${commentaire}"` : ''}. Student must resolve before continuing.`,
+          'WARNING', requestId, 'REQUEST'
+        );
+      }
+      console.log(`Notified ${secs.length} secretaries of pending justification`);
+
+      return res.json({ validation: valRows[0], statut: 'EN_ATTENTE_JUSTIFICATION' });
     } else {
-      // Check if ALL 3 services have now validated → APPROUVE (secretary notified)
+      // Check if ALL 3 services have now validated → APPROUVE
       const { rows: allRows } = await client.query(
         `SELECT COUNT(*) AS cnt
            FROM validations
           WHERE request_id = $1 AND statut = 'VALIDE'`,
         [requestId]
       );
+      console.log(`Validated count: ${allRows[0].cnt} / ${WORKFLOW.length}`);
+
       if (parseInt(allRows[0].cnt) >= WORKFLOW.length) {
         await client.query(
           "UPDATE requests SET statut = 'APPROUVE' WHERE id = $1",
           [requestId]
         );
         await client.query('COMMIT');
+
         // Notify student
-        const { rows: reqInfo } = await db.query(
-          'SELECT student_id FROM requests WHERE id = $1', [requestId]
-        );
-        if (reqInfo[0]) {
-          await createNotification(reqInfo[0].student_id,
-            'Your Request is Approved!',
-            'All departments have validated your request. The secretary will contact you soon.',
-            'SUCCESS', requestId, 'REQUEST');
-        }
+        await createNotification(studentId,
+          'Your Request is Approved!',
+          'All departments have validated your request. The secretary will contact you soon.',
+          'SUCCESS', requestId, 'REQUEST');
+        console.log(`Notified student ${studentName} — fully approved`);
+
         // Notify all secretaries
         const { rows: secretaries } = await db.query(
           `SELECT id FROM users WHERE role = 'SECRETAIRE' AND active = true`
@@ -169,9 +229,11 @@ const validate = async (req, res) => {
         for (const sec of secretaries) {
           await createNotification(sec.id,
             'Request Fully Validated — Action Required',
-            `Request #${requestId} has been approved by all departments and requires your action.`,
+            `Request #${requestId} from ${studentName} has been approved by all departments and requires your action.`,
             'SUCCESS', requestId, 'REQUEST');
         }
+        console.log(`Notified ${secretaries.length} secretaries — request fully approved`);
+
         return res.json({ validation: valRows[0] });
       } else {
         await client.query(
@@ -179,6 +241,7 @@ const validate = async (req, res) => {
           [requestId]
         );
         await client.query('COMMIT');
+
         // Notify next department in chain
         const currentIdx = WORKFLOW.findIndex(w => w.service === service);
         const next = WORKFLOW[currentIdx + 1];
@@ -186,10 +249,11 @@ const validate = async (req, res) => {
           const { rows: nextAgents } = await db.query(
             `SELECT id FROM users WHERE role = $1 AND active = true`, [next.role]
           );
+          console.log(`Notifying ${nextAgents.length} ${next.role} users (next in chain)`);
           for (const agent of nextAgents) {
             await createNotification(agent.id,
-              'New Validation Request',
-              `Request #${requestId} is ready for your validation.`,
+              `Validation Required — ${SERVICE_NAMES[next.service] || next.service}`,
+              `${svcLabel} approved request #${requestId} from ${studentName}. Now needs your validation.`,
               'INFO', requestId, 'REQUEST');
           }
         }
@@ -238,4 +302,41 @@ const getByRequest = async (req, res) => {
   }
 };
 
-module.exports = { getPending, validate, getByRequest };
+// ── GET /api/validations/my-history ──────────────────────────────────────────
+// Returns validations the calling agent has already decided (VALIDE or REJETE)
+const getMyHistory = async (req, res) => {
+  const service = roleToService(req.user.role);
+  if (!service) {
+    return res.status(403).json({ error: 'Your role does not perform validations' });
+  }
+  try {
+    const { rows } = await db.query(
+      `SELECT
+         v.id             AS validation_id,
+         v.statut         AS decision,
+         v.commentaire,
+         v.date_validation,
+         r.id             AS request_id,
+         r.type           AS request_type,
+         r.format,
+         r.statut         AS request_statut,
+         r.date_demande,
+         u.nom, u.prenom, u.email,
+         c.nom            AS classe_nom
+       FROM validations v
+       JOIN requests r ON v.request_id = r.id
+       JOIN users u ON r.student_id = u.id
+       LEFT JOIN classes c ON u.classe_id = c.id
+       WHERE v.service = $1
+         AND v.statut IN ('VALIDE', 'REJETE')
+       ORDER BY v.date_validation DESC`,
+      [service]
+    );
+    res.json({ validations: rows });
+  } catch (err) {
+    console.error('getMyHistory error:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+module.exports = { getPending, validate, getByRequest, getMyHistory };

@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage'
 import ChefDashboardPage      from './pages/chef/ChefDashboardPage'
 import AttendancePage         from './pages/chef/AttendancePage'
 import AttendanceHistoryPage  from './pages/chef/AttendanceHistoryPage'
+import ChefNewRequestPage     from './pages/chef/ChefNewRequestPage'
+import ChefMyRequestsPage     from './pages/chef/ChefMyRequestsPage'
 
 // Secrétaire
 import SecretaireDashboardPage from './pages/secretaire/SecretaireDashboardPage'
@@ -51,6 +53,16 @@ export default function App() {
           <Route path="/chef/history" element={
             <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
               <AttendanceHistoryPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chef/requests/new" element={
+            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+              <ChefNewRequestPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/chef/requests" element={
+            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+              <ChefMyRequestsPage />
             </ProtectedRoute>
           } />
 

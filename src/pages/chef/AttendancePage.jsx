@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
+import NotificationBell from '../../components/NotificationBell'
 
 const STATUTS = ['PRESENT', 'ABSENT', 'RETARD', 'EXCUSE']
 
@@ -121,17 +122,33 @@ export default function AttendancePage() {
             <span className="material-icons" style={s.navIcon}>history</span>
             History
           </div>
+          <div style={s.navItem} onClick={() => navigate('/chef/requests/new')}>
+            <span className="material-icons" style={s.navIcon}>add_circle</span>
+            New Request
+          </div>
+          <div style={s.navItem} onClick={() => navigate('/chef/requests')}>
+            <span className="material-icons" style={s.navIcon}>description</span>
+            My Requests
+          </div>
         </nav>
-        <div style={s.sidebarBottom}>
-          <div style={s.userInfo}>
-            <div style={s.avatar}>{user?.prenom?.[0]}{user?.nom?.[0]}</div>
-            <div>
-              <div style={s.userName}>{user?.prenom} {user?.nom}</div>
-              <div style={s.userRole}>Chef de Classe</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'16px 20px', borderTop:'1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ width:'38px', height:'38px', borderRadius:'50%', background:'#C8184A', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:700, flexShrink:0 }}>
+            {user?.prenom?.[0]}{user?.nom?.[0]}
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:'13px', fontWeight:700, color:'#ffffff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {user?.prenom} {user?.nom}
+            </div>
+            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.50)', marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {classInfo ? `Class Rep — ${classInfo.filiere} ${classInfo.niveau}` : 'Class Representative'}
             </div>
           </div>
-          <button style={s.logoutBtn} onClick={logout}>
-            <span className="material-icons" style={{ fontSize: '18px' }}>logout</span>
+          <button onClick={logout} title="Logout" style={{ background:'none', border:'none', color:'rgba(255,255,255,0.40)', cursor:'pointer', padding:'4px', display:'flex', alignItems:'center', flexShrink:0 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
           </button>
         </div>
       </aside>
@@ -143,12 +160,15 @@ export default function AttendancePage() {
             <h1 style={s.pageTitle}>Take Attendance</h1>
             <p style={s.pageSubtitle}>Mark each student's status for the selected date</p>
           </div>
-          <input
-            type="date"
-            value={date}
-            onChange={handleDateChange}
-            style={s.datePicker}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <NotificationBell />
+            <input
+              type="date"
+              value={date}
+              onChange={handleDateChange}
+              style={s.datePicker}
+            />
+          </div>
         </header>
 
         {/* Class info strip */}

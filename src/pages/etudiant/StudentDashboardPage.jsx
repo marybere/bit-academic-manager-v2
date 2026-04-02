@@ -16,13 +16,17 @@ const TYPE_LABEL = { RELEVE_NOTES:'Transcript', ATTESTATION_INSCRIPTION:'Enrollm
 export default function StudentDashboardPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [requests,   setRequests]   = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [showPwdModal, setShowPwdModal] = useState(false)
-  const [pwdForm,    setPwdForm]    = useState({ current:'', next:'', confirm:'' })
-  const [pwdSaving,  setPwdSaving]  = useState(false)
-  const [pwdError,   setPwdError]   = useState('')
-  const [pwdSuccess, setPwdSuccess] = useState(false)
+  const [requests,      setRequests]      = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [classInfo,     setClassInfo]     = useState(null)
+  const [showPwdModal,  setShowPwdModal]  = useState(false)
+  const [pwdForm,       setPwdForm]       = useState({ current:'', next:'', confirm:'' })
+  const [pwdSaving,     setPwdSaving]     = useState(false)
+  const [pwdError,      setPwdError]      = useState('')
+  const [pwdSuccess,    setPwdSuccess]    = useState(false)
+  const [showCurrent,   setShowCurrent]   = useState(false)
+  const [showNew,       setShowNew]       = useState(false)
+  const [showConfirm,   setShowConfirm]   = useState(false)
 
   useEffect(() => {
     api.get('/requests/my')
@@ -30,6 +34,14 @@ export default function StudentDashboardPage() {
       .catch(err => console.error(err.message))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (user?.classe_id) {
+      api.get(`/classes/${user.classe_id}/info`)
+        .then(res => setClassInfo(res.data.classe))
+        .catch(() => {})
+    }
+  }, [user])
 
   const handleChangePwd = async (e) => {
     e.preventDefault()
@@ -73,7 +85,10 @@ export default function StudentDashboardPage() {
         <div style={s.sidebarBottom}>
           <div style={s.userInfo}>
             <div style={s.avatar}>{user?.prenom?.[0]}{user?.nom?.[0]}</div>
-            <div><div style={s.userName}>{user?.prenom} {user?.nom}</div><div style={s.userRole}>Student</div></div>
+            <div>
+              <div style={s.userName}>{user?.prenom} {user?.nom}</div>
+              <div style={s.userRole}>{classInfo ? `${classInfo.niveau} ${classInfo.filiere}` : 'Student'}</div>
+            </div>
           </div>
           <button style={s.logoutBtn} onClick={logout}><span className="material-icons" style={{fontSize:'18px'}}>logout</span></button>
         </div>
@@ -190,14 +205,23 @@ export default function StudentDashboardPage() {
               <form onSubmit={handleChangePwd}>
                 {pwdError && <div style={s.errorMsg}>{pwdError}</div>}
                 <label style={s.label}>Current Password</label>
-                <input style={s.input} type="password" value={pwdForm.current}
-                  onChange={e => setPwdForm(p=>({...p,current:e.target.value}))} required autoFocus />
-                <label style={s.label}>New Password</label>
-                <input style={s.input} type="password" value={pwdForm.next}
-                  onChange={e => setPwdForm(p=>({...p,next:e.target.value}))} required placeholder="At least 6 characters" />
-                <label style={s.label}>Confirm New Password</label>
-                <input style={s.input} type="password" value={pwdForm.confirm}
-                  onChange={e => setPwdForm(p=>({...p,confirm:e.target.value}))} required />
+                <div style={s.pwdWrap}>
+                  <input style={{...s.input, marginBottom:0, paddingRight:'40px'}} type={showCurrent ? 'text' : 'password'} value={pwdForm.current}
+                    onChange={e => setPwdForm(p=>({...p,current:e.target.value}))} required autoFocus />
+                  <button type="button" style={s.eyeBtn} onClick={() => setShowCurrent(v=>!v)}><EyeIcon open={showCurrent}/></button>
+                </div>
+                <label style={{...s.label, marginTop:'14px'}}>New Password</label>
+                <div style={s.pwdWrap}>
+                  <input style={{...s.input, marginBottom:0, paddingRight:'40px'}} type={showNew ? 'text' : 'password'} value={pwdForm.next}
+                    onChange={e => setPwdForm(p=>({...p,next:e.target.value}))} required placeholder="At least 6 characters" />
+                  <button type="button" style={s.eyeBtn} onClick={() => setShowNew(v=>!v)}><EyeIcon open={showNew}/></button>
+                </div>
+                <label style={{...s.label, marginTop:'14px'}}>Confirm New Password</label>
+                <div style={s.pwdWrap}>
+                  <input style={{...s.input, marginBottom:0, paddingRight:'40px'}} type={showConfirm ? 'text' : 'password'} value={pwdForm.confirm}
+                    onChange={e => setPwdForm(p=>({...p,confirm:e.target.value}))} required />
+                  <button type="button" style={s.eyeBtn} onClick={() => setShowConfirm(v=>!v)}><EyeIcon open={showConfirm}/></button>
+                </div>
                 <div style={s.modalActions}>
                   <button type="button" style={s.cancelBtn} onClick={() => setShowPwdModal(false)}>Cancel</button>
                   <button type="submit" style={{...s.submitBtn,opacity:pwdSaving?0.7:1}} disabled={pwdSaving}>
@@ -210,6 +234,21 @@ export default function StudentDashboardPage() {
         </div>
       )}
     </div>
+  )
+}
+
+function EyeIcon({ open }) {
+  return open ? (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  ) : (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
   )
 }
 
@@ -267,4 +306,6 @@ const s = {
   cancelBtn:   { background:'#f1f5f9', border:'none', borderRadius:'8px', padding:'10px 18px', fontSize:'14px', color:'#374151', cursor:'pointer', fontWeight:500 },
   submitBtn:   { background:'#C8184A', color:'#fff', border:'none', borderRadius:'8px', padding:'10px 20px', fontSize:'14px', fontWeight:600, cursor:'pointer' },
   successBox:  { display:'flex', flexDirection:'column', alignItems:'center', padding:'24px 0', textAlign:'center' },
+  pwdWrap:     { position:'relative', marginBottom:'0' },
+  eyeBtn:      { position:'absolute', right:'10px', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:'4px', color:'#94a3b8', display:'flex', alignItems:'center' },
 }

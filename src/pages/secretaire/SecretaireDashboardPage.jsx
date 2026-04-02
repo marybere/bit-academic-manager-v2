@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
@@ -27,24 +27,26 @@ export default function SecretaireDashboardPage() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const [tab, setTab]                       = useState('all')  // 'all' | 'new' | 'approved'
+  const [tab, setTab]                       = useState('all')  // 'all' | 'new' | 'approved' | 'archives'
   const [requests, setRequests]             = useState([])
   const [newRequests, setNewRequests]       = useState([])
   const [approvedRequests, setApprovedRequests] = useState([])
+  const [archivedRequests, setArchivedRequests] = useState([])
+  const [pendingJustification, setPendingJustification] = useState([])
   const [loading, setLoading]               = useState(true)
   const [filterStatut, setFilterStatut]     = useState('')
   const [filterType, setFilterType]         = useState('')
-  // New Request creation modal
-  const [showNewModal, setShowNewModal]     = useState(false)
-  const [allStudents, setAllStudents]       = useState([])
-  const [newForm, setNewForm]               = useState({ student_id: '', type: 'RELEVE_NOTES', format: 'PDF', notes: '' })
-  const [newError, setNewError]             = useState('')
-  const [newLoading, setNewLoading]         = useState(false)
 
   // Schedule pickup modal
   const [schedModal, setSchedModal]         = useState(null)  // request object
   const [schedDate, setSchedDate]           = useState('')
   const [schedLoading, setSchedLoading]     = useState(false)
+
+  // Process transcript modal
+  const [processModal, setProcessModal]     = useState(null)  // request object
+  const [processForm, setProcessForm]       = useState({ statut: 'EN_TRAITEMENT', rendez_vous: '', notes: '' })
+  const [processLoading, setProcessLoading] = useState(false)
+  const [processError, setProcessError]     = useState('')
 
   // Forwarding / sending PDF state
   const [actionLoading, setActionLoading]   = useState({})
@@ -57,9 +59,12 @@ export default function SecretaireDashboardPage() {
       if (filterType)   params.set('type',   filterType)
       const res = await api.get(`/requests?${params}`)
       const all = res.data.requests
-      setRequests(all)
+      setArchivedRequests(all.filter(r => r.statut === 'RETIRE'))
+      setPendingJustification(all.filter(r => r.statut === 'EN_ATTENTE_JUSTIFICATION'))
+      setRequests(all.filter(r => r.statut !== 'RETIRE' && r.statut !== 'EN_ATTENTE_JUSTIFICATION'))
       setNewRequests(all.filter(r => r.statut === 'EN_ATTENTE'))
-      setApprovedRequests(all.filter(r => r.statut === 'APPROUVE'))
+      // Only ATTESTATION/DIPLOME go through departments → show in Approved tab
+      setApprovedRequests(all.filter(r => r.statut === 'APPROUVE' && r.type !== 'RELEVE_NOTES'))
     } catch (err) {
       console.error('Load requests error:', err.message)
     } finally {
@@ -74,42 +79,6 @@ export default function SecretaireDashboardPage() {
     const timer = setInterval(loadAll, 30000)
     return () => clearInterval(timer)
   }, [filterStatut, filterType])
-
-  const openNewModal = async () => {
-    setShowNewModal(true)
-    setNewError('')
-    setNewForm({ student_id: '', type: 'RELEVE_NOTES', format: 'PDF', notes: '' })
-    if (allStudents.length === 0) {
-      try {
-        const res = await api.get('/classes')
-        const all = []
-        for (const cls of res.data.classes) {
-          if (parseInt(cls.student_count) > 0) {
-            const s = await api.get(`/classes/${cls.id}/students`)
-            s.data.students.forEach(st => all.push({ ...st, classe_nom: cls.nom }))
-          }
-        }
-        setAllStudents(all.sort((a, b) => a.nom.localeCompare(b.nom)))
-      } catch (err) {
-        console.error('Load students error:', err.message)
-      }
-    }
-  }
-
-  const handleCreate = async (e) => {
-    e.preventDefault()
-    setNewError('')
-    setNewLoading(true)
-    try {
-      await api.post('/requests/manual', newForm)
-      setShowNewModal(false)
-      loadAll()
-    } catch (err) {
-      setNewError(err.response?.data?.error || 'Failed to create request.')
-    } finally {
-      setNewLoading(false)
-    }
-  }
 
   const handleForward = async (id) => {
     setActionLoading(prev => ({ ...prev, [id]: 'forward' }))
@@ -149,6 +118,30 @@ export default function SecretaireDashboardPage() {
     }
   }
 
+  const openProcessModal = (r) => {
+    setProcessModal(r)
+    setProcessForm({ statut: 'EN_TRAITEMENT', rendez_vous: '', notes: r.notes || '' })
+    setProcessError('')
+  }
+
+  const handleProcessTranscript = async () => {
+    setProcessLoading(true)
+    setProcessError('')
+    try {
+      const body = { statut: processForm.statut, notes: processForm.notes || undefined }
+      if (processForm.statut === 'PRET' && processModal.format === 'PAPIER' && processForm.rendez_vous) {
+        body.rendez_vous = processForm.rendez_vous
+      }
+      await api.put(`/requests/${processModal.id}/statut`, body)
+      setProcessModal(null)
+      loadAll()
+    } catch (err) {
+      setProcessError(err.response?.data?.error || 'Failed to update request.')
+    } finally {
+      setProcessLoading(false)
+    }
+  }
+
   const handleExport = () => {
     const header = 'ID,Student,Class,Type,Format,Status,Date\n'
     const rows = requests.map(r =>
@@ -183,9 +176,6 @@ export default function SecretaireDashboardPage() {
           <div style={s.navItem} onClick={() => navigate('/secretaire/classes')}>
             <span className="material-icons" style={s.navIcon}>school</span>Classes
           </div>
-          <div style={s.navItem} onClick={() => navigate('/validation')}>
-            <span className="material-icons" style={s.navIcon}>task_alt</span>Validations
-          </div>
         </nav>
         <div style={s.sidebarBottom}>
           <div style={s.userInfo}>
@@ -211,13 +201,7 @@ export default function SecretaireDashboardPage() {
               {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <NotificationBell />
-            <button style={s.newBtn} onClick={openNewModal}>
-              <span className="material-icons" style={{ fontSize: '18px', marginRight: '6px' }}>add_circle</span>
-              New Request
-            </button>
-          </div>
+          <NotificationBell />
         </header>
 
         {/* Stats */}
@@ -240,6 +224,14 @@ export default function SecretaireDashboardPage() {
           <button style={{ ...s.tab, ...(tab === 'approved' ? s.tabActive : {}) }} onClick={() => setTab('approved')}>
             Approved
             {stats.approved > 0 && <span style={{ ...s.tabBadge, background: '#8b5cf6' }}>{stats.approved}</span>}
+          </button>
+          <button style={{ ...s.tab, ...(tab === 'pending_just' ? s.tabActive : {}) }} onClick={() => setTab('pending_just')}>
+            Pending Justification
+            {pendingJustification.length > 0 && <span style={{ ...s.tabBadge, background: '#f59e0b' }}>{pendingJustification.length}</span>}
+          </button>
+          <button style={{ ...s.tab, ...(tab === 'archives' ? s.tabActive : {}) }} onClick={() => setTab('archives')}>
+            Archives
+            {archivedRequests.length > 0 && <span style={{ ...s.tabBadge, background: '#64748b' }}>{archivedRequests.length}</span>}
           </button>
         </div>
 
@@ -281,9 +273,10 @@ export default function SecretaireDashboardPage() {
             requests={newRequests}
             actionLoading={actionLoading}
             onForward={handleForward}
+            onProcess={openProcessModal}
             navigate={navigate}
           />
-        ) : (
+        ) : tab === 'approved' ? (
           <ApprovedTab
             requests={approvedRequests}
             actionLoading={actionLoading}
@@ -291,50 +284,67 @@ export default function SecretaireDashboardPage() {
             onSendPdf={handleSendPdf}
             navigate={navigate}
           />
+        ) : tab === 'pending_just' ? (
+          <PendingJustificationTab requests={pendingJustification} navigate={navigate} />
+        ) : (
+          <ArchivesTab requests={archivedRequests} navigate={navigate} />
         )}
       </main>
 
-      {/* ── New Request Modal ── */}
-      {showNewModal && (
-        <div style={s.backdrop} onClick={() => setShowNewModal(false)}>
-          <div style={s.modal} onClick={e => e.stopPropagation()}>
+      {/* ── Process Transcript Modal ── */}
+      {processModal && (
+        <div style={s.backdrop} onClick={() => setProcessModal(null)}>
+          <div style={{ ...s.modal, maxWidth: '420px' }} onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
-              <h2 style={s.modalTitle}>New Request</h2>
-              <button style={s.closeBtn} onClick={() => setShowNewModal(false)}>
+              <h2 style={s.modalTitle}>Process Transcript</h2>
+              <button style={s.closeBtn} onClick={() => setProcessModal(null)}>
                 <span className="material-icons">close</span>
               </button>
             </div>
-            <form onSubmit={handleCreate}>
-              {newError && <div style={s.errorMsg}>{newError}</div>}
-              <label style={s.label}>Student</label>
-              <select style={s.input} value={newForm.student_id}
-                onChange={e => setNewForm(p => ({ ...p, student_id: e.target.value }))} required>
-                <option value="">— Select student —</option>
-                {allStudents.map(st => (
-                  <option key={st.id} value={st.id}>{st.prenom} {st.nom} — {st.classe_nom}</option>
-                ))}
-              </select>
-              <label style={s.label}>Request Type</label>
-              <select style={s.input} value={newForm.type}
-                onChange={e => setNewForm(p => ({ ...p, type: e.target.value }))}>
-                {TYPES.map(t => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
-              </select>
-              <label style={s.label}>Format</label>
-              <select style={s.input} value={newForm.format}
-                onChange={e => setNewForm(p => ({ ...p, format: e.target.value }))}>
-                {FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
-              </select>
-              <label style={s.label}>Notes (optional)</label>
-              <textarea style={{ ...s.input, height: '80px', resize: 'vertical' }}
-                value={newForm.notes} onChange={e => setNewForm(p => ({ ...p, notes: e.target.value }))}
-                placeholder="Any special instructions..." />
-              <div style={s.modalActions}>
-                <button type="button" style={s.cancelBtn} onClick={() => setShowNewModal(false)}>Cancel</button>
-                <button type="submit" style={{ ...s.submitBtn, opacity: newLoading ? 0.7 : 1 }} disabled={newLoading}>
-                  {newLoading ? 'Creating...' : 'Create Request'}
-                </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+              <div style={s.studentAvatar}>{processModal.prenom?.[0]}{processModal.nom?.[0]}</div>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f172a' }}>{processModal.prenom} {processModal.nom}</div>
+                <div style={{ fontSize: '12px', color: '#64748b' }}>{processModal.email}</div>
               </div>
-            </form>
+              <span style={{ ...s.typeBadge, marginLeft: 'auto', background: '#dbeafe', color: '#1d4ed8' }}>TRANSCRIPT</span>
+            </div>
+            {processError && <div style={s.errorMsg}>{processError}</div>}
+            <label style={s.label}>Status</label>
+            <select style={s.input} value={processForm.statut}
+              onChange={e => setProcessForm(p => ({ ...p, statut: e.target.value }))}>
+              <option value="EN_TRAITEMENT">Processing</option>
+              <option value="PRET">Ready</option>
+              <option value="RETIRE">Collected</option>
+            </select>
+            {processForm.statut === 'PRET' && processModal.format === 'PAPIER' && (
+              <>
+                <label style={s.label}>Pickup Date & Time</label>
+                <input type="datetime-local" style={s.input}
+                  value={processForm.rendez_vous}
+                  onChange={e => setProcessForm(p => ({ ...p, rendez_vous: e.target.value }))} />
+              </>
+            )}
+            {processForm.statut === 'PRET' && processModal.format === 'PDF' && (
+              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontSize: '13px', color: '#166534' }}>
+                <span className="material-icons" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>mark_email_read</span>
+                Student will be notified to check their email for the PDF.
+              </div>
+            )}
+            <label style={s.label}>Notes (optional)</label>
+            <textarea style={{ ...s.input, height: '72px', resize: 'vertical' }}
+              value={processForm.notes}
+              onChange={e => setProcessForm(p => ({ ...p, notes: e.target.value }))}
+              placeholder="Any remarks..." />
+            <div style={s.modalActions}>
+              <button style={s.cancelBtn} onClick={() => setProcessModal(null)}>Cancel</button>
+              <button
+                style={{ ...s.submitBtn, opacity: processLoading ? 0.7 : 1 }}
+                onClick={handleProcessTranscript}
+                disabled={processLoading}>
+                {processLoading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -370,6 +380,163 @@ export default function SecretaireDashboardPage() {
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function PendingJustificationTab({ requests, navigate }) {
+  if (requests.length === 0) return (
+    <div style={s.emptyState}>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <p style={{ color: '#64748b', margin: '8px 0 0' }}>No requests pending justification.</p>
+    </div>
+  )
+  return (
+    <div style={s.cardGrid}>
+      {requests.map(r => (
+        <div key={r.id} style={{ ...s.reqCard, borderLeft: '3px solid #f59e0b' }}>
+          <div style={{ display:'flex', alignItems:'center', background:'#fef9c3', color:'#854d0e', borderRadius:'6px', padding:'8px 10px', fontSize:'12px', fontWeight:600, marginBottom:'14px', gap:'6px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            Pending Justification — {r.rejection_service || 'Department'}
+          </div>
+          <div style={s.studentRow}>
+            <div style={s.studentAvatar}>{r.prenom?.[0]}{r.nom?.[0]}</div>
+            <div>
+              <div style={s.studentName}>{r.prenom} {r.nom}</div>
+              <div style={s.studentEmail}>{r.email}</div>
+              {r.classe_nom && <div style={s.studentClass}>{r.classe_nom}</div>}
+            </div>
+          </div>
+          {r.rejection_reason && (
+            <div style={{ background:'#fef2f2', borderRadius:'6px', padding:'8px 10px', marginBottom:'10px' }}>
+              <div style={{ fontSize:'11px', fontWeight:600, color:'#991b1b', marginBottom:'2px' }}>Rejection reason:</div>
+              <div style={{ fontSize:'12px', color:'#7f1d1d' }}>{r.rejection_reason}</div>
+            </div>
+          )}
+          <div style={s.reqMeta}>
+            <div style={s.metaItem}>
+              <span className="material-icons" style={{ fontSize:'14px', color:'#94a3b8' }}>description</span>
+              {TYPE_LABEL[r.type] || r.type}
+            </div>
+            <div style={s.metaItem}>
+              <span className="material-icons" style={{ fontSize:'14px', color:'#94a3b8' }}>calendar_today</span>
+              {new Date(r.date_demande).toLocaleDateString('fr-FR')}
+            </div>
+          </div>
+          <div style={s.cardActions}>
+            <button style={s.manageBtn} onClick={() => navigate(`/secretaire/request/${r.id}`)}>
+              <span className="material-icons" style={{ fontSize:'15px', marginRight:'4px' }}>open_in_new</span>View Details
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ArchivesTab({ requests, navigate }) {
+  const [search, setSearch] = useState('')
+  const [filterClass, setFilterClass] = useState('')
+
+  const classes = [...new Set(requests.map(r => r.classe_nom).filter(Boolean))]
+
+  const filtered = requests.filter(r => {
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      r.nom?.toLowerCase().includes(q) ||
+      r.prenom?.toLowerCase().includes(q) ||
+      r.email?.toLowerCase().includes(q) ||
+      String(r.id).includes(q)
+    const matchClass = !filterClass || r.classe_nom === filterClass
+    return matchSearch && matchClass
+  })
+
+  if (requests.length === 0) return (
+    <div style={s.emptyState}>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1.5">
+        <path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/>
+      </svg>
+      <p style={{ color: '#64748b', margin: '8px 0 0' }}>No archived requests yet.</p>
+    </div>
+  )
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
+            style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="text" placeholder="Search by name, email or ID..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ width: '100%', padding: '9px 12px 9px 34px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+        </div>
+        <select value={filterClass} onChange={e => setFilterClass(e.target.value)}
+          style={{ padding: '9px 12px', border: '1.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', background: '#fff', outline: 'none', minWidth: '160px' }}>
+          <option value="">All classes</option>
+          {classes.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <span style={{ fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>
+          {filtered.length} record{filtered.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div style={s.tableCard}>
+        <table style={s.table}>
+          <thead>
+            <tr style={s.theadRow}>
+              <th style={s.th}>#</th>
+              <th style={s.th}>Student</th>
+              <th style={s.th}>Class</th>
+              <th style={s.th}>Type</th>
+              <th style={s.th}>Format</th>
+              <th style={s.th}>Submitted</th>
+              <th style={s.th}>Collected</th>
+              <th style={s.th}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr><td colSpan="8" style={{ textAlign: 'center', padding: '32px', color: '#94a3b8', fontSize: '14px' }}>
+                No results for "{search}"
+              </td></tr>
+            ) : filtered.map(r => (
+              <tr key={r.id} style={s.tr}>
+                <td style={{ ...s.td, color: '#94a3b8', fontSize: '12px' }}>#{r.id}</td>
+                <td style={s.td}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ ...s.miniAvatar, background: '#f1f5f9', color: '#475569' }}>{r.prenom?.[0]}{r.nom?.[0]}</div>
+                    <div>
+                      <div style={{ fontWeight: 500, fontSize: '13px' }}>{r.prenom} {r.nom}</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8' }}>{r.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td style={{ ...s.td, fontSize: '12px', color: '#64748b' }}>{r.classe_nom || '—'}</td>
+                <td style={s.td}><span style={s.typeBadge}>{TYPE_LABEL[r.type] || r.type}</span></td>
+                <td style={{ ...s.td, fontSize: '12px', color: '#64748b' }}>{r.format}</td>
+                <td style={{ ...s.td, fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                  {new Date(r.date_demande).toLocaleDateString('fr-FR')}
+                </td>
+                <td style={{ ...s.td, fontSize: '12px', color: '#64748b', whiteSpace: 'nowrap' }}>
+                  {r.updated_at ? new Date(r.updated_at).toLocaleDateString('fr-FR') : '—'}
+                </td>
+                <td style={s.td}>
+                  <button style={s.manageBtn} onClick={() => navigate(`/secretaire/request/${r.id}`)}>View</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
 
 function AllRequestsTable({ requests, navigate }) {
   if (requests.length === 0) return (
@@ -426,7 +593,7 @@ function AllRequestsTable({ requests, navigate }) {
   )
 }
 
-function NewRequestsTab({ requests, actionLoading, onForward, navigate }) {
+function NewRequestsTab({ requests, actionLoading, onForward, onProcess, navigate }) {
   if (requests.length === 0) return (
     <div style={s.emptyState}>
       <span className="material-icons" style={{ fontSize: '56px', color: '#cbd5e1' }}>done_all</span>
@@ -436,50 +603,75 @@ function NewRequestsTab({ requests, actionLoading, onForward, navigate }) {
   )
   return (
     <div style={s.cardGrid}>
-      {requests.map(r => (
-        <div key={r.id} style={s.reqCard}>
-          <div style={s.reqCardTop}>
-            <span style={s.reqId}>#{r.id}</span>
-            <span style={s.typeBadge}>{TYPE_LABEL[r.type] || r.type}</span>
-          </div>
-          <div style={s.studentRow}>
-            <div style={s.studentAvatar}>{r.prenom?.[0]}{r.nom?.[0]}</div>
-            <div>
-              <div style={s.studentName}>{r.prenom} {r.nom}</div>
-              <div style={s.studentEmail}>{r.email}</div>
-              {r.classe_nom && <div style={s.studentClass}>{r.classe_nom}</div>}
+      {requests.map(r => {
+        const isTranscript = r.type === 'RELEVE_NOTES'
+        return (
+          <div key={r.id} style={{ ...s.reqCard, borderLeft: isTranscript ? '3px solid #3b82f6' : '3px solid #C8184A' }}>
+            <div style={s.reqCardTop}>
+              <span style={s.reqId}>#{r.id}</span>
+              <span style={{ ...s.typeBadge, background: isTranscript ? '#dbeafe' : '#fee2e2', color: isTranscript ? '#1d4ed8' : '#991b1b' }}>
+                {TYPE_LABEL[r.type] || r.type}
+              </span>
+            </div>
+            <div style={s.studentRow}>
+              <div style={s.studentAvatar}>{r.prenom?.[0]}{r.nom?.[0]}</div>
+              <div>
+                <div style={s.studentName}>{r.prenom} {r.nom}</div>
+                <div style={s.studentEmail}>{r.email}</div>
+                {r.classe_nom && <div style={s.studentClass}>{r.classe_nom}</div>}
+              </div>
+            </div>
+            <div style={s.reqMeta}>
+              <div style={s.metaItem}>
+                <span className="material-icons" style={{ fontSize: '14px', color: '#94a3b8' }}>
+                  {r.format === 'PDF' ? 'picture_as_pdf' : 'article'}
+                </span>
+                {r.format}
+              </div>
+              <div style={s.metaItem}>
+                <span className="material-icons" style={{ fontSize: '14px', color: '#94a3b8' }}>calendar_today</span>
+                {new Date(r.date_demande).toLocaleDateString('fr-FR')}
+              </div>
+            </div>
+            {r.notes && (
+              <div style={s.notesBox}>
+                <span className="material-icons" style={{ fontSize: '14px', color: '#6366f1', marginRight: '6px', flexShrink: 0 }}>notes</span>
+                <span style={{ fontSize: '12px', color: '#4338ca' }}>{r.notes}</span>
+              </div>
+            )}
+            {isTranscript ? (
+              <div style={{ background: '#eff6ff', borderRadius: '6px', padding: '6px 10px', marginBottom: '4px', fontSize: '11px', color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-icons" style={{ fontSize: '14px' }}>info</span>
+                Secretary processes directly — no department approval needed
+              </div>
+            ) : (
+              <div style={{ background: '#fff7ed', borderRadius: '6px', padding: '6px 10px', marginBottom: '4px', fontSize: '11px', color: '#9a3412', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span className="material-icons" style={{ fontSize: '14px' }}>account_tree</span>
+                Requires CAISSE → IT → LABORATOIRE approval
+              </div>
+            )}
+            <div style={s.cardActions}>
+              <button style={s.manageBtn} onClick={() => navigate(`/secretaire/request/${r.id}`)}>
+                <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>open_in_new</span>View
+              </button>
+              {isTranscript ? (
+                <button style={{ ...s.processBtn }} onClick={() => onProcess(r)}>
+                  <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>edit_note</span>
+                  Process Transcript
+                </button>
+              ) : (
+                <button
+                  style={{ ...s.forwardBtn, opacity: actionLoading[r.id] ? 0.7 : 1 }}
+                  onClick={() => onForward(r.id)}
+                  disabled={!!actionLoading[r.id]}>
+                  <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>send</span>
+                  {actionLoading[r.id] === 'forward' ? 'Forwarding...' : 'Forward to Depts'}
+                </button>
+              )}
             </div>
           </div>
-          <div style={s.reqMeta}>
-            <div style={s.metaItem}>
-              <span className="material-icons" style={{ fontSize: '14px', color: '#94a3b8' }}>picture_as_pdf</span>
-              {r.format}
-            </div>
-            <div style={s.metaItem}>
-              <span className="material-icons" style={{ fontSize: '14px', color: '#94a3b8' }}>calendar_today</span>
-              {new Date(r.date_demande).toLocaleDateString('fr-FR')}
-            </div>
-          </div>
-          {r.notes && (
-            <div style={s.notesBox}>
-              <span className="material-icons" style={{ fontSize: '14px', color: '#6366f1', marginRight: '6px', flexShrink: 0 }}>notes</span>
-              <span style={{ fontSize: '12px', color: '#4338ca' }}>{r.notes}</span>
-            </div>
-          )}
-          <div style={s.cardActions}>
-            <button style={s.manageBtn} onClick={() => navigate(`/secretaire/request/${r.id}`)}>
-              <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>open_in_new</span>View
-            </button>
-            <button
-              style={{ ...s.forwardBtn, opacity: actionLoading[r.id] ? 0.7 : 1 }}
-              onClick={() => onForward(r.id)}
-              disabled={!!actionLoading[r.id]}>
-              <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>send</span>
-              {actionLoading[r.id] === 'forward' ? 'Forwarding...' : 'Forward to Depts'}
-            </button>
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -636,6 +828,7 @@ const s = {
   validBadge:   { background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 },
   cardActions:  { display: 'flex', gap: '8px', marginTop: '12px' },
   forwardBtn:   { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#C8184A', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' },
+  processBtn:   { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' },
   scheduleBtn:  { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' },
   pdfBtn:       { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', padding: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' },
   backdrop:     { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 },
