@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
@@ -12,17 +12,17 @@ export default function NotificationBell() {
   const [expanded, setExpanded]           = useState(null)
   const ref = useRef(null)
 
-  const load = () => {
+  const load = useCallback(() => {
     api.get('/notifications/my')
       .then(res => { setNotifications(res.data.notifications || []); setUnread(res.data.unread || 0) })
       .catch(() => {})
-  }
+  }, [])
 
   useEffect(() => {
     load()
     const timer = setInterval(load, 30000)
     return () => clearInterval(timer)
-  }, [])
+  }, [load])
 
   // Close dropdown when clicking outside
   useEffect(() => {

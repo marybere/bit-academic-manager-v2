@@ -335,6 +335,7 @@ export default function ClassManagementPage() {
                       ) : students.length === 0 ? (
                         <div style={s.emptyList}>No students in this class yet.</div>
                       ) : (
+                        <div style={{ overflowX: 'auto', width: '100%' }}>
                         <table style={s.table}>
                           <thead>
                             <tr>
@@ -358,6 +359,15 @@ export default function ClassManagementPage() {
                                       {st.prenom[0]}{st.nom[0]}
                                     </div>
                                     <span style={{ fontWeight: 500 }}>{st.prenom} {st.nom}</span>
+                                    {st.is_chef && (
+                                      <span style={{
+                                        background: '#C8184A', color: '#fff',
+                                        fontSize: '10px', fontWeight: 700,
+                                        padding: '2px 6px', borderRadius: '4px',
+                                      }}>
+                                        Class Rep
+                                      </span>
+                                    )}
                                   </div>
                                 </td>
                                 <td style={{ ...s.td, color: '#64748b' }}>{st.email}</td>
@@ -392,6 +402,7 @@ export default function ClassManagementPage() {
                             ))}
                           </tbody>
                         </table>
+                        </div>
                       )}
 
                       <div style={s.sectionFooter}>
@@ -660,10 +671,10 @@ const s = {
   addBtn:       { display: 'flex', alignItems: 'center', background: '#C8184A', color: '#fff', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' },
   listLoading:  { padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' },
   emptyList:    { padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' },
-  table:        { width: '100%', borderCollapse: 'collapse' },
-  th:           { textAlign: 'left', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #f1f5f9' },
+  table:        { width: '100%', minWidth: '720px', borderCollapse: 'collapse' },
+  th:           { textAlign: 'left', padding: '8px 12px', fontSize: '11px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #f1f5f9', whiteSpace: 'nowrap' },
   tr:           { borderBottom: '1px solid #f8fafc' },
-  td:           { padding: '9px 12px', fontSize: '13px', color: '#374151' },
+  td:           { padding: '9px 12px', fontSize: '13px', color: '#374151', whiteSpace: 'nowrap' },
   miniAvatar:   { width: '26px', height: '26px', borderRadius: '50%', background: '#ede9fe', color: '#5b21b6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 700, flexShrink: 0 },
   resetPwdBtn:  { display: 'flex', alignItems: 'center', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '6px', padding: '3px 8px', fontSize: '11px', fontWeight: 600, color: '#92400e', cursor: 'pointer' },
   removeBtn:    { background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', borderRadius: '4px', display: 'flex', alignItems: 'center' },

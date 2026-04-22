@@ -1,5 +1,6 @@
 const db     = require('../config/db');
 const bcrypt = require('bcryptjs');
+const { sendClassRepChangedEmail } = require('../services/emailService');
 
 // ── GET /api/classes ──────────────────────────────────────────────────────────
 // Returns all classes with student_count and chef name
@@ -39,10 +40,11 @@ const getClassStudents = async (req, res) => {
   try {
     const [studentsRes, classRes] = await Promise.all([
       db.query(
-        `SELECT id, nom, prenom, email, created_at
+        `SELECT id, nom, prenom, email, role, active, created_at,
+                CASE WHEN role = 'CHEF_CLASSE' THEN true ELSE false END AS is_chef
            FROM users
-          WHERE classe_id = $1 AND role = 'STUDENT'
-          ORDER BY nom ASC, prenom ASC`,
+          WHERE classe_id = $1 AND role IN ('STUDENT', 'CHEF_CLASSE') AND active = true
+          ORDER BY role = 'CHEF_CLASSE' DESC, nom ASC, prenom ASC`,
         [classId]
       ),
       db.query('SELECT * FROM classes WHERE id = $1', [classId]),
@@ -155,10 +157,10 @@ const exportStudents = async (req, res) => {
   try {
     const [studentsRes, classRes] = await Promise.all([
       db.query(
-        `SELECT id, nom, prenom, email, created_at
+        `SELECT id, nom, prenom, email, role, created_at
            FROM users
-          WHERE classe_id = $1 AND role = 'STUDENT'
-          ORDER BY nom ASC, prenom ASC`,
+          WHERE classe_id = $1 AND role IN ('STUDENT', 'CHEF_CLASSE') AND active = true
+          ORDER BY role = 'CHEF_CLASSE' DESC, nom ASC, prenom ASC`,
         [classId]
       ),
       db.query('SELECT nom, filiere, niveau FROM classes WHERE id = $1', [classId]),
@@ -172,9 +174,10 @@ const exportStudents = async (req, res) => {
     const students = studentsRes.rows;
 
     // Build CSV
-    const header = 'Matricule,Nom,Prénom,Email,Classe\n';
+    const header = 'Matricule,Nom,Prénom,Email,Rôle,Classe\n';
     const lines  = students.map((s, i) =>
-      `BIT-${String(i + 1).padStart(3, '0')},${s.nom},${s.prenom},${s.email},${classe.nom}`
+      `BIT-${String(i + 1).padStart(3, '0')},${s.nom},${s.prenom},${s.email},` +
+      `${s.role === 'CHEF_CLASSE' ? 'Class Rep' : 'Student'},${classe.nom}`
     );
     const csv = header + lines.join('\n');
 
@@ -217,14 +220,15 @@ const changeChef = async (req, res) => {
       return res.status(404).json({ error: 'Class not found' });
     }
 
-    // Verify new chef exists and belongs to this class
+    // Verify new chef exists and get their info
     const { rows: newChefRows } = await client.query(
-      'SELECT id, role FROM users WHERE id = $1', [new_chef_id]
+      'SELECT id, role, nom, prenom, email FROM users WHERE id = $1', [new_chef_id]
     );
     if (!newChefRows[0]) {
       await client.query('ROLLBACK');
       return res.status(404).json({ error: 'New chef user not found' });
     }
+    const newChef = newChefRows[0];
 
     // Step 1: Demote old chef (by explicit id, or auto-find current one)
     const resolvedOldId = old_chef_id || (
@@ -233,10 +237,15 @@ const changeChef = async (req, res) => {
       )
     ).rows[0]?.id;
 
+    let oldChef = null;
     if (resolvedOldId && resolvedOldId !== parseInt(new_chef_id)) {
+      const { rows: oldChefRows } = await client.query(
+        'SELECT id, nom, prenom, email FROM users WHERE id = $1', [resolvedOldId]
+      );
+      oldChef = oldChefRows[0] || null;
       await client.query(
         "UPDATE users SET role = 'STUDENT', classe_id = $1 WHERE id = $2",
-        [classId, resolvedOldId]   // keeps them in the same class as a student
+        [classId, resolvedOldId]
       );
     }
 
@@ -257,6 +266,22 @@ const changeChef = async (req, res) => {
         LEFT JOIN users chef ON chef.classe_id = c.id AND chef.role = 'CHEF_CLASSE'
        WHERE c.id = $1`, [classId]
     );
+
+    const className = rows[0]?.nom || `Class #${classId}`;
+
+    // Notify new chef
+    console.log(`Sending class rep appointed email to: ${newChef.email}`);
+    sendClassRepChangedEmail(newChef.email, `${newChef.prenom} ${newChef.nom}`, className, true)
+      .then(info => console.log(`Class rep email sent to ${newChef.email} — messageId: ${info?.messageId}`))
+      .catch(err => console.warn(`Class rep email failed for ${newChef.email}:`, err.message));
+
+    // Notify old chef (if they were demoted)
+    if (oldChef) {
+      console.log(`Sending class rep removed email to: ${oldChef.email}`);
+      sendClassRepChangedEmail(oldChef.email, `${oldChef.prenom} ${oldChef.nom}`, className, false)
+        .then(info => console.log(`Class rep removal email sent to ${oldChef.email} — messageId: ${info?.messageId}`))
+        .catch(err => console.warn(`Class rep removal email failed for ${oldChef.email}:`, err.message));
+    }
 
     res.json({ class: rows[0] });
   } catch (err) {

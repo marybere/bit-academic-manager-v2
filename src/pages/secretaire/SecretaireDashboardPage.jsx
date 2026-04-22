@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
@@ -42,6 +42,12 @@ export default function SecretaireDashboardPage() {
   const [schedDate, setSchedDate]           = useState('')
   const [schedLoading, setSchedLoading]     = useState(false)
 
+  // Send PDF modal
+  const [pdfModal,   setPdfModal]   = useState(null)
+  const [pdfFile,    setPdfFile]    = useState(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfError,   setPdfError]   = useState('')
+
   // Process transcript modal
   const [processModal, setProcessModal]     = useState(null)  // request object
   const [processForm, setProcessForm]       = useState({ statut: 'EN_TRAITEMENT', rendez_vous: '', notes: '' })
@@ -51,8 +57,7 @@ export default function SecretaireDashboardPage() {
   // Forwarding / sending PDF state
   const [actionLoading, setActionLoading]   = useState({})
 
-  const loadAll = async () => {
-    setLoading(true)
+  const loadAll = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (filterStatut) params.set('statut', filterStatut)
@@ -63,18 +68,19 @@ export default function SecretaireDashboardPage() {
       setPendingJustification(all.filter(r => r.statut === 'EN_ATTENTE_JUSTIFICATION'))
       setRequests(all.filter(r => r.statut !== 'RETIRE' && r.statut !== 'EN_ATTENTE_JUSTIFICATION'))
       setNewRequests(all.filter(r => r.statut === 'EN_ATTENTE'))
-      // Only ATTESTATION/DIPLOME go through departments → show in Approved tab
       setApprovedRequests(all.filter(r => r.statut === 'APPROUVE' && r.type !== 'RELEVE_NOTES'))
     } catch (err) {
-      console.error('Load requests error:', err.message)
-    } finally {
-      setLoading(false)
+      console.error('Background refresh error:', err.message)
     }
-  }
+  }, [filterStatut, filterType])
 
-  useEffect(() => { loadAll() }, [filterStatut, filterType])
+  // Initial load with spinner
+  useEffect(() => {
+    setLoading(true)
+    loadAll().finally(() => setLoading(false))
+  }, [loadAll])
 
-  // Auto-refresh every 30 seconds
+  // Background auto-refresh — no spinner
   useEffect(() => {
     const timer = setInterval(loadAll, 30000)
     return () => clearInterval(timer)
@@ -92,15 +98,24 @@ export default function SecretaireDashboardPage() {
     }
   }
 
-  const handleSendPdf = async (id) => {
-    setActionLoading(prev => ({ ...prev, [id]: 'pdf' }))
+  const handleSendPdf = async () => {
+    if (!pdfFile) { setPdfError('Please select a PDF file'); return }
+    if (pdfFile.type !== 'application/pdf') { setPdfError('Only PDF files are accepted'); return }
+    setPdfLoading(true)
+    setPdfError('')
     try {
-      await api.put(`/requests/${id}/send-pdf`)
+      const formData = new FormData()
+      formData.append('document', pdfFile)
+      await api.put(`/requests/${pdfModal.id}/send-pdf`, formData, {
+        headers: { 'Content-Type': undefined },
+      })
+      setPdfModal(null)
+      setPdfFile(null)
       loadAll()
     } catch (err) {
-      alert(err.response?.data?.error || 'Action failed.')
+      setPdfError(err.response?.data?.error || 'Failed to send PDF')
     } finally {
-      setActionLoading(prev => ({ ...prev, [id]: null }))
+      setPdfLoading(false)
     }
   }
 
@@ -122,21 +137,42 @@ export default function SecretaireDashboardPage() {
     setProcessModal(r)
     setProcessForm({ statut: 'EN_TRAITEMENT', rendez_vous: '', notes: r.notes || '' })
     setProcessError('')
+    setPdfFile(null)
   }
 
   const handleProcessTranscript = async () => {
+    if (processForm.statut === 'PRET' && processModal.format === 'PDF' && !pdfFile) {
+      setProcessError('Please select a PDF file to send to the student')
+      return
+    }
+    if (processForm.statut === 'PRET' && processModal.format === 'PAPIER' && !processForm.rendez_vous) {
+      setProcessError('Please select a pickup date and time')
+      return
+    }
+
     setProcessLoading(true)
     setProcessError('')
     try {
-      const body = { statut: processForm.statut, notes: processForm.notes || undefined }
-      if (processForm.statut === 'PRET' && processModal.format === 'PAPIER' && processForm.rendez_vous) {
-        body.rendez_vous = processForm.rendez_vous
+      if (processForm.statut === 'PRET' && processModal.format === 'PDF' && pdfFile) {
+        const formData = new FormData()
+        formData.append('document', pdfFile)
+        await api.put(`/requests/${processModal.id}/send-pdf`, formData, {
+          headers: { 'Content-Type': undefined },
+        })
+      } else if (processForm.statut === 'PRET' && processModal.format === 'PAPIER' && processForm.rendez_vous) {
+        await api.put(`/requests/${processModal.id}/schedule`, { rendez_vous: processForm.rendez_vous })
+      } else {
+        await api.put(`/requests/${processModal.id}/statut`, {
+          statut: processForm.statut,
+          notes:  processForm.notes || undefined,
+        })
       }
-      await api.put(`/requests/${processModal.id}/statut`, body)
       setProcessModal(null)
+      setPdfFile(null)
+      setProcessForm({ statut: 'EN_TRAITEMENT', notes: '', rendez_vous: '' })
       loadAll()
     } catch (err) {
-      setProcessError(err.response?.data?.error || 'Failed to update request.')
+      setProcessError(err.response?.data?.error || 'Action failed. Try again.')
     } finally {
       setProcessLoading(false)
     }
@@ -281,7 +317,7 @@ export default function SecretaireDashboardPage() {
             requests={approvedRequests}
             actionLoading={actionLoading}
             onSchedule={(r) => { setSchedModal(r); setSchedDate('') }}
-            onSendPdf={handleSendPdf}
+            onSendPdf={(r) => { setPdfModal(r); setPdfFile(null); setPdfError('') }}
             navigate={navigate}
           />
         ) : tab === 'pending_just' ? (
@@ -317,18 +353,60 @@ export default function SecretaireDashboardPage() {
               <option value="PRET">Ready</option>
               <option value="RETIRE">Collected</option>
             </select>
+            {processForm.statut === 'PRET' && processModal.format === 'PDF' && (
+              <div style={{ marginBottom: '14px' }}>
+                <label style={s.label}>Upload PDF Document *</label>
+                <div
+                  style={{
+                    border: `2px dashed ${pdfFile ? '#166534' : '#C8184A'}`,
+                    borderRadius: '10px', padding: '20px', textAlign: 'center',
+                    background: pdfFile ? '#f0fdf4' : '#fff5f5',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                  }}
+                  onClick={() => document.getElementById('process-pdf-input').click()}
+                >
+                  {pdfFile ? (
+                    <>
+                      <div style={{ fontSize: '28px' }}>📄</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#166534', marginTop: '6px' }}>{pdfFile.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); setPdfFile(null) }}
+                        style={{ marginTop: '6px', background: 'none', border: '1px solid #fecaca', borderRadius: '6px', color: '#dc2626', fontSize: '11px', padding: '3px 8px', cursor: 'pointer' }}
+                      >Remove</button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '28px' }}>📁</div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#374151', marginTop: '6px' }}>Click to select PDF file</div>
+                      <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>PDF only · Max 10 MB</div>
+                    </>
+                  )}
+                </div>
+                <input
+                  id="process-pdf-input"
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  style={{ display: 'none' }}
+                  onChange={e => {
+                    const file = e.target.files[0]
+                    e.target.value = ''
+                    if (!file) return
+                    if (file.type !== 'application/pdf') { setProcessError('Only PDF files are accepted'); return }
+                    if (file.size > 10 * 1024 * 1024)    { setProcessError('File must be less than 10 MB'); return }
+                    setPdfFile(file)
+                    setProcessError('')
+                  }}
+                />
+              </div>
+            )}
             {processForm.statut === 'PRET' && processModal.format === 'PAPIER' && (
-              <>
-                <label style={s.label}>Pickup Date & Time</label>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={s.label}>Pickup Date & Time *</label>
                 <input type="datetime-local" style={s.input}
                   value={processForm.rendez_vous}
                   onChange={e => setProcessForm(p => ({ ...p, rendez_vous: e.target.value }))} />
-              </>
-            )}
-            {processForm.statut === 'PRET' && processModal.format === 'PDF' && (
-              <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '10px 12px', marginBottom: '14px', fontSize: '13px', color: '#166534' }}>
-                <span className="material-icons" style={{ fontSize: '16px', verticalAlign: 'middle', marginRight: '6px' }}>mark_email_read</span>
-                Student will be notified to check their email for the PDF.
               </div>
             )}
             <label style={s.label}>Notes (optional)</label>
@@ -343,6 +421,98 @@ export default function SecretaireDashboardPage() {
                 onClick={handleProcessTranscript}
                 disabled={processLoading}>
                 {processLoading ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Send PDF Modal ── */}
+      {pdfModal && (
+        <div style={s.backdrop} onClick={() => setPdfModal(null)}>
+          <div style={{ ...s.modal, maxWidth: '440px' }} onClick={e => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <h2 style={s.modalTitle}>Send PDF Document</h2>
+              <button style={s.closeBtn} onClick={() => setPdfModal(null)}>
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+
+            {/* Student info */}
+            <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px' }}>
+              <div style={{ fontWeight: 600, fontSize: '14px', color: '#0f172a' }}>
+                {pdfModal.prenom} {pdfModal.nom}
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                {pdfModal.email} — {TYPE_LABEL[pdfModal.type] || pdfModal.type}
+              </div>
+            </div>
+
+            <label style={s.label}>Select PDF Document</label>
+
+            {/* Drop zone */}
+            <div
+              style={{
+                border: `2px dashed ${pdfFile ? '#166534' : '#e2e8f0'}`,
+                borderRadius: '10px', padding: '24px', textAlign: 'center',
+                background: pdfFile ? '#f0fdf4' : '#f8fafc',
+                cursor: 'pointer', marginBottom: '16px', transition: 'all 0.2s',
+              }}
+              onClick={() => document.getElementById('pdf-upload-input').click()}
+            >
+              {pdfFile ? (
+                <>
+                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📄</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#166534' }}>{pdfFile.name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    {(pdfFile.size / 1024 / 1024).toFixed(2)} MB
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); setPdfFile(null) }}
+                    style={{ marginTop: '8px', background: 'none', border: '1px solid #fecaca', borderRadius: '6px', color: '#dc2626', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>📁</div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#374151' }}>Click to select PDF</div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>PDF files only · Max 10 MB</div>
+                </>
+              )}
+            </div>
+
+            <input
+              id="pdf-upload-input"
+              type="file"
+              accept=".pdf,application/pdf"
+              style={{ display: 'none' }}
+              onChange={e => {
+                const file = e.target.files[0]
+                e.target.value = ''
+                if (!file) return
+                if (file.type !== 'application/pdf') { setPdfError('Only PDF files are accepted'); return }
+                if (file.size > 10 * 1024 * 1024)    { setPdfError('File size must be less than 10 MB'); return }
+                setPdfFile(file)
+                setPdfError('')
+              }}
+            />
+
+            {pdfError && (
+              <div style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '10px 14px', color: '#dc2626', fontSize: '13px', marginBottom: '14px' }}>
+                {pdfError}
+              </div>
+            )}
+
+            <div style={s.modalActions}>
+              <button style={s.cancelBtn} onClick={() => setPdfModal(null)}>Cancel</button>
+              <button
+                onClick={handleSendPdf}
+                disabled={!pdfFile || pdfLoading}
+                style={{ ...s.submitBtn, background: '#10b981', opacity: (!pdfFile || pdfLoading) ? 0.6 : 1, cursor: (!pdfFile || pdfLoading) ? 'not-allowed' : 'pointer' }}
+              >
+                {pdfLoading ? 'Sending…' : '📧 Send to Student'}
               </button>
             </div>
           </div>
@@ -732,11 +902,10 @@ function ApprovedTab({ requests, actionLoading, onSchedule, onSendPdf, navigate 
               </button>
             ) : (
               <button
-                style={{ ...s.pdfBtn, opacity: actionLoading[r.id] ? 0.7 : 1 }}
-                onClick={() => onSendPdf(r.id)}
-                disabled={!!actionLoading[r.id]}>
+                style={s.pdfBtn}
+                onClick={() => onSendPdf(r)}>
                 <span className="material-icons" style={{ fontSize: '15px', marginRight: '4px' }}>email</span>
-                {actionLoading[r.id] === 'pdf' ? 'Sending...' : 'Send PDF'}
+                Send PDF
               </button>
             )}
             <button style={s.manageBtn} onClick={() => navigate(`/secretaire/request/${r.id}`)}>

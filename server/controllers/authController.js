@@ -1,6 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
+const crypto = require('crypto');
 const db     = require('../config/db');
+const { send: sendEmail } = require('../services/emailService');
+const APP_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -113,4 +116,100 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { login, logout, me, changePassword };
+// ── POST /api/auth/forgot-password ────────────────────────────────────────────
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required' });
+
+  try {
+    const { rows } = await db.query(
+      'SELECT * FROM users WHERE email = $1 AND active = true',
+      [email.toLowerCase().trim()]
+    );
+
+    // Always return success — don't reveal whether email exists
+    if (!rows[0]) {
+      return res.json({ message: 'If this email exists, a reset link has been sent.' });
+    }
+
+    const user = rows[0];
+    const resetToken  = crypto.randomBytes(32).toString('hex');
+    const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
+
+    await db.query(
+      `UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3`,
+      [resetToken, resetExpiry, user.id]
+    );
+
+    const resetUrl = `${APP_URL}/reset-password?token=${resetToken}`;
+
+    console.log(`Sending forgot password email to: ${user.email}`);
+    await sendEmail(
+      user.email,
+      'Password Reset Request — BIT Academic Manager',
+      `
+      <p class="greeting">Hello, ${user.prenom} ${user.nom}</p>
+      <p class="message">You requested a password reset.
+        Click the button below to set a new password.
+        This link expires in <strong>1 hour</strong>.</p>
+      <div style="text-align:center;margin:28px 0">
+        <a href="${resetUrl}"
+           style="background:#C8184A;color:#fff;padding:14px 32px;
+                  border-radius:8px;text-decoration:none;font-weight:bold;
+                  font-size:15px;display:inline-block">
+          Reset My Password
+        </a>
+      </div>
+      <div class="banner-warning">
+        <p>If you did not request this, ignore this email — your password will not change.</p>
+      </div>
+      <hr class="divider">
+      <p style="font-size:13px;color:#94a3b8;margin:0">
+        Or copy this link: <a href="${resetUrl}">${resetUrl}</a>
+      </p>
+      `
+    );
+
+    res.json({ message: 'If this email exists, a reset link has been sent.' });
+  } catch (err) {
+    console.error('forgotPassword error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ── POST /api/auth/reset-password ─────────────────────────────────────────────
+const resetPasswordViaToken = async (req, res) => {
+  const { token, password } = req.body;
+
+  if (!token || !password) return res.status(400).json({ error: 'token and password are required' });
+  if (password.length < 6)  return res.status(400).json({ error: 'Password must be at least 6 characters' });
+
+  try {
+    const { rows } = await db.query(
+      `SELECT * FROM users
+       WHERE reset_token = $1
+         AND reset_token_expiry > NOW()
+         AND active = true`,
+      [token]
+    );
+
+    if (!rows[0]) {
+      return res.status(400).json({ error: 'Invalid or expired reset link. Please request a new one.' });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    await db.query(
+      `UPDATE users
+         SET password_hash = $1, reset_token = NULL, reset_token_expiry = NULL
+       WHERE id = $2`,
+      [hash, rows[0].id]
+    );
+
+    res.json({ message: 'Password reset successfully' });
+  } catch (err) {
+    console.error('resetPasswordViaToken error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = { login, logout, me, changePassword, forgotPassword, resetPasswordViaToken };

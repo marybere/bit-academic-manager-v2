@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
 import api from '../../services/api'
 import NotificationBell from '../../components/NotificationBell'
+import ChefSidebar from '../../components/ChefSidebar'
 
 const TYPES = [
   { value:'RELEVE_NOTES',            label:'Transcript (Relevé de notes)' },
@@ -16,22 +16,12 @@ const FORMATS = [
 ]
 
 export default function ChefNewRequestPage() {
-  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
-  const [form,      setForm]      = useState({ type:'RELEVE_NOTES', format:'PDF', notes:'' })
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState('')
-  const [success,   setSuccess]   = useState(false)
-  const [classInfo, setClassInfo] = useState(null)
-
-  useEffect(() => {
-    if (user?.classe_id) {
-      api.get(`/classes/${user.classe_id}/students`)
-        .then(res => setClassInfo(res.data))
-        .catch(() => {})
-    }
-  }, [user])
+  const [form,    setForm]    = useState({ type:'RELEVE_NOTES', format:'PDF', notes:'' })
+  const [loading, setLoading] = useState(false)
+  const [error,   setError]   = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -50,49 +40,7 @@ export default function ChefNewRequestPage() {
 
   return (
     <div style={s.page}>
-      <aside style={s.sidebar}>
-        <div style={s.logo}>
-          <img src="/icons/bit-logo.png" alt="BIT" style={{width:'36px',height:'36px',objectFit:'contain',borderRadius:'6px',background:'#fff',padding:'3px',flexShrink:0}} />
-          <span style={s.logoText}>Academic Manager</span>
-        </div>
-        <nav style={s.nav}>
-          <div style={s.navItem} onClick={() => navigate('/chef/dashboard')}>
-            <span className="material-icons" style={s.navIcon}>dashboard</span>Dashboard
-          </div>
-          <div style={s.navItem} onClick={() => navigate('/chef/attendance')}>
-            <span className="material-icons" style={s.navIcon}>fact_check</span>Take Attendance
-          </div>
-          <div style={s.navItem} onClick={() => navigate('/chef/history')}>
-            <span className="material-icons" style={s.navIcon}>history</span>History
-          </div>
-          <div style={{...s.navItem,...s.navActive}}>
-            <span className="material-icons" style={s.navIcon}>add_circle</span>New Request
-          </div>
-          <div style={s.navItem} onClick={() => navigate('/chef/requests')}>
-            <span className="material-icons" style={s.navIcon}>description</span>My Requests
-          </div>
-        </nav>
-        <div style={{ display:'flex', alignItems:'center', gap:'10px', padding:'16px 20px', borderTop:'1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ width:'38px', height:'38px', borderRadius:'50%', background:'#C8184A', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'13px', fontWeight:700, flexShrink:0 }}>
-            {user?.prenom?.[0]}{user?.nom?.[0]}
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:'13px', fontWeight:700, color:'#ffffff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              {user?.prenom} {user?.nom}
-            </div>
-            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.50)', marginTop:'2px', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              {classInfo?.class ? `Class Rep — ${classInfo.class.filiere} ${classInfo.class.niveau}` : 'Class Representative'}
-            </div>
-          </div>
-          <button onClick={logout} title="Logout" style={{ background:'none', border:'none', color:'rgba(255,255,255,0.40)', cursor:'pointer', padding:'4px', display:'flex', alignItems:'center', flexShrink:0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-          </button>
-        </div>
-      </aside>
+      <ChefSidebar />
 
       <main style={s.main}>
         <div style={s.topBar}>

@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../services/api'
 
-// Role → home route mapping
 const ROLE_ROUTES = {
-  ADMIN:       '/secretaire/dashboard',
+  ADMIN:       '/admin/settings',
   SECRETAIRE:  '/secretaire/dashboard',
   CHEF_CLASSE: '/chef/dashboard',
   STUDENT:     '/etudiant/dashboard',
@@ -23,6 +23,26 @@ export default function LoginPage() {
   const [error,        setError]        = useState('')
   const [loading,      setLoading]      = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe,   setRememberMe]   = useState(false)
+
+  // Forgot password
+  const [showForgotModal, setShowForgotModal] = useState(false)
+  const [forgotEmail,     setForgotEmail]     = useState('')
+  const [forgotLoading,   setForgotLoading]   = useState(false)
+  const [forgotSuccess,   setForgotSuccess]   = useState(false)
+  const [forgotError,     setForgotError]     = useState('')
+
+  // Create account info
+  const [showContactMsg, setShowContactMsg] = useState(false)
+
+  // Pre-fill remembered email on mount
+  useEffect(() => {
+    const remembered = localStorage.getItem('remembered_email')
+    if (remembered) {
+      setEmail(remembered)
+      setRememberMe(true)
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -31,6 +51,13 @@ export default function LoginPage() {
 
     try {
       const user = await login(email.trim(), password)
+
+      if (rememberMe) {
+        localStorage.setItem('remembered_email', email.trim())
+      } else {
+        localStorage.removeItem('remembered_email')
+      }
+
       const dest = ROLE_ROUTES[user.role] || '/login'
       navigate(dest, { replace: true })
     } catch (err) {
@@ -40,6 +67,13 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const closeForgot = () => {
+    setShowForgotModal(false)
+    setForgotEmail('')
+    setForgotSuccess(false)
+    setForgotError('')
   }
 
   return (
@@ -113,13 +147,25 @@ export default function LoginPage() {
             {/* Error */}
             {error && <p style={styles.errorMsg}>{error}</p>}
 
-            {/* Remember / Forgot */}
+            {/* Remember Me / Forgot Password */}
             <div style={styles.rowBetween}>
               <label style={styles.rememberLabel}>
-                <input type="checkbox" style={{ accentColor: '#C8184A' }} />
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  style={{ width: '16px', height: '16px', accentColor: '#C8184A', cursor: 'pointer' }}
+                />
                 &nbsp;Remember me
               </label>
-              <a href="#" style={styles.link}>Forgot password?</a>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                style={styles.linkBtn}
+              >
+                Forgot password?
+              </button>
             </div>
 
             {/* Submit */}
@@ -133,17 +179,92 @@ export default function LoginPage() {
 
           </form>
 
-          <p style={styles.signupRow}>
-            Don't have an account?{' '}
-            <a href="#" style={styles.link}>Create a new one</a>
-          </p>
+          {/* Create account */}
+          {showContactMsg ? (
+            <div style={styles.contactMsg}>
+              Account creation is managed by the Administrator.
+              Please contact your system administrator to create an account.
+              <button
+                onClick={() => setShowContactMsg(false)}
+                style={{ marginLeft: '8px', background: 'none', border: 'none', color: '#C8184A', cursor: 'pointer', fontWeight: 600, fontSize: '12px' }}
+              >
+                OK
+              </button>
+            </div>
+          ) : (
+            <p style={styles.signupRow}>
+              Don't have an account?{' '}
+              <button
+                type="button"
+                onClick={() => setShowContactMsg(true)}
+                style={styles.linkBtn}
+              >
+                Create a new one
+              </button>
+            </p>
+          )}
         </div>
       </div>
+
+      {/* ── Forgot Password Modal ── */}
+      {showForgotModal && (
+        <div style={styles.modalBackdrop} onClick={closeForgot}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Forgot Password</h2>
+            <p style={styles.modalSubtitle}>
+              Enter your email address and we will send you a link to reset your password.
+            </p>
+
+            {forgotSuccess ? (
+              <div style={styles.successBox}>
+                If this email exists in our system, a reset link has been sent. Check your inbox.
+              </div>
+            ) : (
+              <>
+                {forgotError && <div style={styles.errorBox}>{forgotError}</div>}
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleForgotSubmit()}
+                  style={styles.modalInput}
+                />
+                <button
+                  onClick={handleForgotSubmit}
+                  disabled={forgotLoading}
+                  style={{ ...styles.modalPrimaryBtn, opacity: forgotLoading ? 0.7 : 1, cursor: forgotLoading ? 'not-allowed' : 'pointer' }}
+                >
+                  {forgotLoading ? 'Sending…' : 'Send Reset Link'}
+                </button>
+              </>
+            )}
+
+            <button onClick={closeForgot} style={styles.modalSecondaryBtn}>
+              {forgotSuccess ? 'Close' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
+
+  async function handleForgotSubmit() {
+    if (!forgotEmail.trim()) { setForgotError('Please enter your email'); return }
+    setForgotLoading(true)
+    setForgotError('')
+    try {
+      await api.post('/auth/forgot-password', { email: forgotEmail.trim() })
+      setForgotSuccess(true)
+    } catch {
+      setForgotError('Something went wrong. Please try again.')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
 }
 
-// ── Inline styles (mirrors login.html design) ─────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 const styles = {
   body: {
     minHeight: '100dvh',
@@ -285,10 +406,17 @@ const styles = {
     alignItems: 'center',
     color: '#64748b',
     cursor: 'pointer',
+    gap: '4px',
   },
-  link: {
+  linkBtn: {
+    background: 'none',
+    border: 'none',
     color: '#C8184A',
     fontWeight: 500,
+    cursor: 'pointer',
+    fontSize: '0.8125rem',
+    padding: 0,
+    fontFamily: 'inherit',
     textDecoration: 'none',
   },
   btn: {
@@ -309,6 +437,16 @@ const styles = {
     textAlign: 'center',
     fontSize: '0.8125rem',
     color: '#64748b',
+    margin: 0,
+  },
+  contactMsg: {
+    textAlign: 'center',
+    fontSize: '0.8125rem',
+    color: '#475569',
+    background: '#f1f5f9',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    lineHeight: 1.5,
   },
   eyeBtn: {
     position: 'absolute',
@@ -322,5 +460,89 @@ const styles = {
     color: '#9ca3af',
     display: 'flex',
     alignItems: 'center',
+  },
+  // Modal
+  modalBackdrop: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+  },
+  modal: {
+    background: '#fff',
+    borderRadius: '14px',
+    padding: '32px',
+    width: '400px',
+    maxWidth: '95vw',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+  },
+  modalTitle: {
+    fontSize: '18px',
+    fontWeight: 700,
+    color: '#0f172a',
+    margin: '0 0 8px',
+  },
+  modalSubtitle: {
+    fontSize: '14px',
+    color: '#64748b',
+    margin: '0 0 20px',
+    lineHeight: 1.5,
+  },
+  modalInput: {
+    width: '100%',
+    padding: '11px 14px',
+    border: '1.5px solid #e2e8f0',
+    borderRadius: '8px',
+    fontSize: '14px',
+    outline: 'none',
+    boxSizing: 'border-box',
+    marginBottom: '16px',
+    fontFamily: 'inherit',
+  },
+  modalPrimaryBtn: {
+    width: '100%',
+    background: '#C8184A',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '12px',
+    fontSize: '14px',
+    fontWeight: 600,
+    marginBottom: '10px',
+    fontFamily: 'inherit',
+  },
+  modalSecondaryBtn: {
+    width: '100%',
+    background: '#f1f5f9',
+    color: '#64748b',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '11px',
+    fontSize: '14px',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  successBox: {
+    background: '#dcfce7',
+    border: '1px solid #bbf7d0',
+    borderRadius: '8px',
+    padding: '14px',
+    color: '#166534',
+    fontSize: '14px',
+    textAlign: 'center',
+    marginBottom: '16px',
+    lineHeight: 1.5,
+  },
+  errorBox: {
+    background: '#fee2e2',
+    border: '1px solid #fecaca',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    color: '#991b1b',
+    fontSize: '13px',
+    marginBottom: '14px',
   },
 }

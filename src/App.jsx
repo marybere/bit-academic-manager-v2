@@ -2,7 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 
-import LoginPage from './pages/LoginPage'
+import LoginPage          from './pages/LoginPage'
+import ResetPasswordPage    from './pages/ResetPasswordPage'
+import ConfirmReceptionPage from './pages/ConfirmReceptionPage'
 
 // Chef de classe
 import ChefDashboardPage      from './pages/chef/ChefDashboardPage'
@@ -38,83 +40,85 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/confirm/:token" element={<ConfirmReceptionPage />} />
 
           {/* Chef de classe */}
           <Route path="/chef/dashboard" element={
-            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+            <ProtectedRoute roles={['CHEF_CLASSE']}>
               <ChefDashboardPage />
             </ProtectedRoute>
           } />
           <Route path="/chef/attendance" element={
-            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+            <ProtectedRoute roles={['CHEF_CLASSE']}>
               <AttendancePage />
             </ProtectedRoute>
           } />
           <Route path="/chef/history" element={
-            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+            <ProtectedRoute roles={['CHEF_CLASSE']}>
               <AttendanceHistoryPage />
             </ProtectedRoute>
           } />
           <Route path="/chef/requests/new" element={
-            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+            <ProtectedRoute roles={['CHEF_CLASSE']}>
               <ChefNewRequestPage />
             </ProtectedRoute>
           } />
           <Route path="/chef/requests" element={
-            <ProtectedRoute roles={['CHEF_CLASSE','ADMIN']}>
+            <ProtectedRoute roles={['CHEF_CLASSE']}>
               <ChefMyRequestsPage />
             </ProtectedRoute>
           } />
 
           {/* Secrétaire */}
           <Route path="/secretaire/dashboard" element={
-            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+            <ProtectedRoute roles={['SECRETAIRE']}>
               <SecretaireDashboardPage />
             </ProtectedRoute>
           } />
           <Route path="/secretaire/classes" element={
-            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+            <ProtectedRoute roles={['SECRETAIRE']}>
               <ClassManagementPage />
             </ProtectedRoute>
           } />
           <Route path="/secretaire/request/:id" element={
-            <ProtectedRoute roles={['SECRETAIRE','ADMIN']}>
+            <ProtectedRoute roles={['SECRETAIRE']}>
               <RequestDetailPage />
             </ProtectedRoute>
           } />
 
           {/* Étudiant */}
           <Route path="/etudiant/dashboard" element={
-            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+            <ProtectedRoute roles={['STUDENT']}>
               <StudentDashboardPage />
             </ProtectedRoute>
           } />
           <Route path="/etudiant/new-request" element={
-            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+            <ProtectedRoute roles={['STUDENT']}>
               <NewRequestPage />
             </ProtectedRoute>
           } />
           <Route path="/etudiant/track" element={
-            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+            <ProtectedRoute roles={['STUDENT']}>
               <TrackRequestPage />
             </ProtectedRoute>
           } />
           <Route path="/etudiant/track/:id" element={
-            <ProtectedRoute roles={['STUDENT','ADMIN']}>
+            <ProtectedRoute roles={['STUDENT']}>
               <TrackRequestPage />
             </ProtectedRoute>
           } />
 
           {/* Directeur */}
           <Route path="/directeur/analytics" element={
-            <ProtectedRoute roles={['DIRECTEUR','ADMIN']}>
+            <ProtectedRoute roles={['DIRECTEUR']}>
               <DirecteurAnalyticsPage />
             </ProtectedRoute>
           } />
 
           {/* Validation */}
           <Route path="/validation" element={
-            <ProtectedRoute roles={['CAISSE','IT','LABORATOIRE','SECRETAIRE','ADMIN']}>
+            <ProtectedRoute roles={['CAISSE','IT','LABORATOIRE','SECRETAIRE']}>
               <ValidationPage />
             </ProtectedRoute>
           } />
@@ -125,6 +129,7 @@ export default function App() {
               <AdminSettingsPage />
             </ProtectedRoute>
           } />
+          <Route path="/admin" element={<Navigate to="/admin/settings" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const { createNotification } = require('./notificationController');
+const { sendRequestStatusEmail } = require('../services/emailService');
 
 // Workflow order: each role maps to the service it validates
 // and the step number that must be completed before it can act.
@@ -113,7 +114,7 @@ const validate = async (req, res) => {
 
     // Confirm request exists and get student info
     const { rows: reqRows } = await client.query(
-      `SELECT r.*, u.nom, u.prenom FROM requests r
+      `SELECT r.*, u.nom, u.prenom, u.email FROM requests r
          JOIN users u ON r.student_id = u.id
         WHERE r.id = $1`,
       [requestId]
@@ -123,8 +124,10 @@ const validate = async (req, res) => {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    const studentName = `${reqRows[0].prenom} ${reqRows[0].nom}`;
-    const studentId   = reqRows[0].student_id;
+    const studentName  = `${reqRows[0].prenom} ${reqRows[0].nom}`;
+    const studentId    = reqRows[0].student_id;
+    const studentEmail = reqRows[0].email;
+    const requestType  = reqRows[0].type;
 
     // Check prerequisites are met
     const step = WORKFLOW.find((w) => w.service === service);
@@ -183,6 +186,11 @@ const validate = async (req, res) => {
       );
       console.log(`Notified student ${studentName} of rejection by ${svcLabel}`);
 
+      console.log(`Sending rejection email to: ${studentEmail}`);
+      sendRequestStatusEmail(studentEmail, studentName, requestType, 'EN_ATTENTE_JUSTIFICATION', commentaire || null)
+        .then(info => console.log(`Rejection email sent to ${studentEmail} — messageId: ${info?.messageId}`))
+        .catch(err => console.warn(`Rejection email failed for ${studentEmail}:`, err.message));
+
       // Notify secretaries
       const { rows: secs } = await db.query(
         `SELECT id FROM users WHERE role = 'SECRETAIRE' AND active = true`
@@ -221,6 +229,11 @@ const validate = async (req, res) => {
           'All departments have validated your request. The secretary will contact you soon.',
           'SUCCESS', requestId, 'REQUEST');
         console.log(`Notified student ${studentName} — fully approved`);
+
+        console.log(`Sending approval email to: ${studentEmail}`);
+        sendRequestStatusEmail(studentEmail, studentName, requestType, 'APPROUVE')
+          .then(info => console.log(`Approval email sent to ${studentEmail} — messageId: ${info?.messageId}`))
+          .catch(err => console.warn(`Approval email failed for ${studentEmail}:`, err.message));
 
         // Notify all secretaries
         const { rows: secretaries } = await db.query(
