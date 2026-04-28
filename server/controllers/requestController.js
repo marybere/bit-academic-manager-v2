@@ -680,7 +680,7 @@ const confirmReception = async (req, res) => {
   console.log('Token:', cleanToken.substring(0, 20) + '...');
   console.log('Length:', cleanToken.length);
 
-  const successHTML = (name, docType) => `<!DOCTYPE html>
+  const successHTML = (name, docType, email) => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -717,7 +717,7 @@ const confirmReception = async (req, res) => {
       ✅ Your <strong>${docType}</strong> request has been marked as <strong>Collected</strong> and archived.<br>
       The Secretary's Office has been notified.
     </div>
-    <a href="${FRONTEND}/login" class="btn">Go to My Requests</a>
+    <a href="${FRONTEND}/login?email=${encodeURIComponent(email)}&redirect=/etudiant/dashboard" class="btn">Go to My Requests</a>
     <a href="javascript:window.close()" class="btn2">Close this page</a>
     <div class="foot">© ${year} Burkina Institute of Technology — Koudougou</div>
   </div>
@@ -829,7 +829,7 @@ const confirmReception = async (req, res) => {
       'Thank you! Your request has been marked as Collected and archived.',
       'SUCCESS', request.id, 'REQUEST');
 
-    res.status(200).send(successHTML(`${request.prenom} ${request.nom}`, docType));
+    res.status(200).send(successHTML(`${request.prenom} ${request.nom}`, docType, request.email));
   } catch (err) {
     console.error('confirmReception error:', err.message);
     res.status(500).send(errorHTML('Server Error', 'An unexpected error occurred. Please try again or contact the Secretary\'s Office.'));

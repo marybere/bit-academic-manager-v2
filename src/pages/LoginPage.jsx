@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 
@@ -16,7 +16,8 @@ const ROLE_ROUTES = {
 
 export default function LoginPage() {
   const { login } = useAuth()
-  const navigate  = useNavigate()
+  const navigate     = useNavigate()
+  const [searchParams] = useSearchParams()
 
   const [email,        setEmail]        = useState('')
   const [password,     setPassword]     = useState('')
@@ -35,8 +36,19 @@ export default function LoginPage() {
   // Create account info
   const [showContactMsg, setShowContactMsg] = useState(false)
 
-  // Pre-fill remembered email on mount
+  const isFromConfirmation = !!searchParams.get('email')
+
+  // Pre-fill email on mount — URL param (from confirmation page) takes priority
   useEffect(() => {
+    const urlEmail = searchParams.get('email')
+    if (urlEmail) {
+      setEmail(decodeURIComponent(urlEmail))
+      setRememberMe(false)
+      setTimeout(() => {
+        document.getElementById('password-input')?.focus()
+      }, 100)
+      return
+    }
     const remembered = localStorage.getItem('remembered_email')
     if (remembered) {
       setEmail(remembered)
@@ -58,7 +70,8 @@ export default function LoginPage() {
         localStorage.removeItem('remembered_email')
       }
 
-      const dest = ROLE_ROUTES[user.role] || '/login'
+      const redirectParam = searchParams.get('redirect')
+      const dest = redirectParam || ROLE_ROUTES[user.role] || '/login'
       navigate(dest, { replace: true })
     } catch (err) {
       setError(
@@ -95,6 +108,17 @@ export default function LoginPage() {
           <h1 style={styles.heading}>Sign in</h1>
           <p style={styles.subtitle}>Access your academic portal</p>
 
+          {isFromConfirmation && (
+            <div style={{
+              background: '#f0fdf4', border: '1px solid #bbf7d0',
+              borderLeft: '4px solid #22c55e', borderRadius: '8px',
+              padding: '12px 16px', marginBottom: '20px',
+              fontSize: '13px', color: '#166534', lineHeight: 1.5,
+            }}>
+              ✅ Reception confirmed! Enter your password to view your requests.
+            </div>
+          )}
+
           <form onSubmit={handleSubmit}>
 
             {/* Email */}
@@ -102,13 +126,18 @@ export default function LoginPage() {
             <div style={styles.fieldWrap}>
               <span className="material-icons" style={styles.icon}>mail_outline</span>
               <input
-                style={styles.input}
+                style={{
+                  ...styles.input,
+                  background: isFromConfirmation ? '#f8fafc' : styles.input.background,
+                  color: isFromConfirmation ? '#64748b' : styles.input.color,
+                }}
                 type="email"
                 placeholder="name@bit.edu"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => !isFromConfirmation && setEmail(e.target.value)}
+                readOnly={isFromConfirmation}
                 required
-                autoFocus
+                autoFocus={!isFromConfirmation}
               />
             </div>
 
@@ -118,6 +147,7 @@ export default function LoginPage() {
               <span className="material-icons" style={styles.icon}>lock_outline</span>
               <input
                 style={{ ...styles.input, paddingRight: '2.75rem' }}
+                id="password-input"
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={password}
